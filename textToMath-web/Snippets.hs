@@ -13,7 +13,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 header :: Html
 header =
     H.div ! class_ "navbar navbar-inverse navbar-fixed-top" $
-      H.div ! class_ "container" $
-        H.div ! class_ "navbar-header" $
-          H.div ! class_ "navbar-brand" $
-            "TextToMath"
+        H.div ! class_ "container" $
+            H.div ! class_ "navbar-header" $
+                H.div ! class_ "navbar-brand" $
+                    "TextToMath"

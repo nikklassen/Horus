@@ -43,3 +43,4 @@ homePage =
         h1 "Hello!"
         p "Enter your equation below"
         textarea ! A.id "math-input" $ return ()
+

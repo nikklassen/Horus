@@ -1,4 +1,4 @@
-module Calculator.Scanner(
+module Calculator.Scanner (
     scan,
     Kind(..),
     Token(..)
@@ -21,6 +21,7 @@ data State = ST_START
            | ST_INT
            | ST_WS
            | ST_DEC
+           | ST_E
            | ST_EXP
            | ST_OP
            | ST_ID
@@ -50,7 +51,7 @@ scanAcc [] _ cState fStates lexAcc tokAcc
             if cState == ST_WS then
                 tokAcc
             else
-                Token (stateToKind cState) (reverse lexAcc) : tokAcc
+                makeToken cState (reverse lexAcc) : tokAcc
         )
     | otherwise = Left "ERROR: unexpected end of string\n"
 
@@ -64,7 +65,7 @@ scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =
                 if cState == ST_WS then
                     tokAcc
                 else
-                    Token (stateToKind cState) (reverse lexAcc) : tokAcc
+                    makeToken cState (reverse lexAcc) : tokAcc
             )
         else
             Left $ "ERROR: Left to parse " ++ show cState ++ " " ++ str
@@ -76,6 +77,12 @@ scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =
         else
             scanAcc chrs trTable toState fStates (chr:lexAcc) tokAcc
 
+makeToken :: State -> String -> Token
+makeToken state lex
+    | kind == Numeric && (head lex) == '.' = Token kind ('0':lex)
+    | otherwise = Token kind lex
+    where kind = stateToKind state
+
 stateToKind :: State -> Kind
 stateToKind state
     | state `elem` [ST_INT, ST_DEC, ST_EXP] = Numeric
@@ -85,6 +92,7 @@ stateToKind state
     | state == ST_RPAREN = Rparen
 
 isOperator = flip elem "+-/*^%"
+notMinus x = isOperator x && x /= '-'
 notE x = isAlpha x && x /= 'e'
 
 transitionTable = 
@@ -94,10 +102,11 @@ transitionTable =
     , Transition ST_START isOperator ST_OP
     , Transition ST_START (== '(') ST_LPAREN
     , Transition ST_START (== ')') ST_RPAREN
-    , Transition ST_START (== '.') ST_NULL
+    , Transition ST_START (== '.') ST_DEC
     , Transition ST_INT isDigit ST_INT
     , Transition ST_INT (== '.') ST_DEC
-    , Transition ST_INT (== 'e') ST_EXP
+    , Transition ST_INT (== 'e') ST_E
+    , Transition ST_E (\x -> x == '-' || isDigit x) ST_EXP
     , Transition ST_INT notE ST_NULL
     , Transition ST_DEC isDigit ST_DEC
     , Transition ST_DEC (== '.') ST_NULL
@@ -109,7 +118,7 @@ transitionTable =
     , Transition ST_ID isAlpha ST_ID
     , Transition ST_ID isDigit ST_NULL
     , Transition ST_ID (== '.') ST_NULL
-    , Transition ST_OP isOperator ST_NULL
+    , Transition ST_OP notMinus ST_NULL
     ]
 
 finalStates =
