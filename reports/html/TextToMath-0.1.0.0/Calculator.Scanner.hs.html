@@ -1,0 +1,153 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="lineno">    1 </span>module Calculator.Scanner (
+<span class="lineno">    2 </span>    scan,
+<span class="lineno">    3 </span>    Kind(..),
+<span class="lineno">    4 </span>    Token(..)
+<span class="lineno">    5 </span>) where
+<span class="lineno">    6 </span>
+<span class="lineno">    7 </span>import Data.Char(isAlpha,isDigit,isSpace)
+<span class="lineno">    8 </span>import Data.List
+<span class="lineno">    9 </span>import Data.Maybe
+<span class="lineno">   10 </span>import Control.Applicative()
+<span class="lineno">   11 </span>import Control.Exception()
+<span class="lineno">   12 </span>import Calculator.Data.Token
+<span class="lineno">   13 </span>
+<span class="lineno">   14 </span>data State = ST_START
+<span class="lineno">   15 </span>           | ST_INT
+<span class="lineno">   16 </span>           | ST_WS
+<span class="lineno">   17 </span>           | ST_DEC
+<span class="lineno">   18 </span>           | ST_E
+<span class="lineno">   19 </span>           | ST_EXP
+<span class="lineno">   20 </span>           | ST_OP
+<span class="lineno">   21 </span>           | ST_ID
+<span class="lineno">   22 </span>           | ST_LPAREN
+<span class="lineno">   23 </span>           | ST_RPAREN
+<span class="lineno">   24 </span>           | ST_NULL
+<span class="lineno">   25 </span>           deriving(<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>data Transition = Transition {
+<span class="lineno">   28 </span>    <span class="istickedoff"><span class="decl"><span class="istickedoff">getState</span></span></span> :: State,
+<span class="lineno">   29 </span>    <span class="istickedoff"><span class="decl"><span class="istickedoff">getCharSet</span></span></span> :: Char -&gt; Bool,
+<span class="lineno">   30 </span>    <span class="istickedoff"><span class="decl"><span class="istickedoff">getToState</span></span></span> :: State
+<span class="lineno">   31 </span>}
+<span class="lineno">   32 </span>
+<span class="lineno">   33 </span>scan :: String -&gt; [Token]
+<span class="lineno">   34 </span><span class="decl"><span class="istickedoff">scan str = scanAcc str transitionTable ST_START finalStates &quot;&quot; []</span></span>
+<span class="lineno">   35 </span>
+<span class="lineno">   36 </span>scanAcc :: String -&gt; [Transition] -&gt; State -&gt; [State] -&gt; String -&gt; [Token] -&gt; [Token]
+<span class="lineno">   37 </span><span class="decl"><span class="istickedoff">scanAcc [] _ cState fStates lexAcc tokAcc</span>
+<span class="lineno">   38 </span><span class="spaces">    </span><span class="istickedoff">| cState `elem` fStates =</span>
+<span class="lineno">   39 </span><span class="spaces">        </span><span class="istickedoff">reverse $</span>
+<span class="lineno">   40 </span><span class="spaces">        </span><span class="istickedoff">if cState == ST_WS then</span>
+<span class="lineno">   41 </span><span class="spaces">            </span><span class="istickedoff">tokAcc</span>
+<span class="lineno">   42 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   43 </span><span class="spaces">            </span><span class="istickedoff">makeToken cState (reverse lexAcc) : tokAcc</span>
+<span class="lineno">   44 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = error &quot;ERROR: unexpected end of string&quot;</span>
+<span class="lineno">   45 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">   46 </span><span class="spaces"></span><span class="istickedoff">scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =</span>
+<span class="lineno">   47 </span><span class="spaces">    </span><span class="istickedoff">let</span>
+<span class="lineno">   48 </span><span class="spaces">        </span><span class="istickedoff">foundTrans state c t = state == getState t &amp;&amp; getCharSet t c</span>
+<span class="lineno">   49 </span><span class="spaces">        </span><span class="istickedoff">tr = find (foundTrans cState chr) trTable</span>
+<span class="lineno">   50 </span><span class="spaces">    </span><span class="istickedoff">in if isNothing tr then</span>
+<span class="lineno">   51 </span><span class="spaces">        </span><span class="istickedoff">if cState `elem` fStates then</span>
+<span class="lineno">   52 </span><span class="spaces">            </span><span class="istickedoff">scanAcc str trTable ST_START fStates [] (</span>
+<span class="lineno">   53 </span><span class="spaces">                </span><span class="istickedoff">if cState == ST_WS then</span>
+<span class="lineno">   54 </span><span class="spaces">                    </span><span class="istickedoff">tokAcc</span>
+<span class="lineno">   55 </span><span class="spaces">                </span><span class="istickedoff">else</span>
+<span class="lineno">   56 </span><span class="spaces">                    </span><span class="istickedoff">makeToken cState (reverse lexAcc) : tokAcc</span>
+<span class="lineno">   57 </span><span class="spaces">            </span><span class="istickedoff">)</span>
+<span class="lineno">   58 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   59 </span><span class="spaces">            </span><span class="istickedoff">error $ &quot;ERROR: Left to parse &quot; ++ show cState ++ &quot; &quot; ++ str</span>
+<span class="lineno">   60 </span><span class="spaces">    </span><span class="istickedoff">else</span>
+<span class="lineno">   61 </span><span class="spaces">        </span><span class="istickedoff">let</span>
+<span class="lineno">   62 </span><span class="spaces">            </span><span class="istickedoff">toState = getToState $ fromJust tr</span>
+<span class="lineno">   63 </span><span class="spaces">        </span><span class="istickedoff">in if toState == ST_NULL then</span>
+<span class="lineno">   64 </span><span class="spaces">            </span><span class="istickedoff">error $ &quot;ERROR: Invalid symbol &quot; ++ [chr]</span>
+<span class="lineno">   65 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   66 </span><span class="spaces">            </span><span class="istickedoff">scanAcc chrs trTable toState fStates (chr:lexAcc) tokAcc</span></span>
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>makeToken :: State -&gt; String -&gt; Token
+<span class="lineno">   69 </span><span class="decl"><span class="istickedoff">makeToken state lexeme</span>
+<span class="lineno">   70 </span><span class="spaces">    </span><span class="istickedoff">| kind == Numeric &amp;&amp; head lexeme == '.' = Token kind ('0':lexeme)</span>
+<span class="lineno">   71 </span><span class="spaces">    </span><span class="istickedoff">| kind == Id =</span>
+<span class="lineno">   72 </span><span class="spaces">        </span><span class="istickedoff">if lexeme `elem` [&quot;sin&quot;,&quot;cos&quot;,&quot;tan&quot;,&quot;asin&quot;,&quot;acos&quot;,&quot;atan&quot;] then</span>
+<span class="lineno">   73 </span><span class="spaces">           </span><span class="istickedoff">Token Function lexeme</span>
+<span class="lineno">   74 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   75 </span><span class="spaces">            </span><span class="istickedoff">Token Id lexeme</span>
+<span class="lineno">   76 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Token kind lexeme</span>
+<span class="lineno">   77 </span><span class="spaces">    </span><span class="istickedoff">where kind = stateToKind state</span></span>
+<span class="lineno">   78 </span>
+<span class="lineno">   79 </span>stateToKind :: State -&gt; Kind
+<span class="lineno">   80 </span><span class="decl"><span class="istickedoff">stateToKind state</span>
+<span class="lineno">   81 </span><span class="spaces">    </span><span class="istickedoff">| state `elem` [ST_INT, ST_DEC, ST_EXP] = Numeric</span>
+<span class="lineno">   82 </span><span class="spaces">    </span><span class="istickedoff">| state == ST_OP = Op</span>
+<span class="lineno">   83 </span><span class="spaces">    </span><span class="istickedoff">| state == ST_ID = Id</span>
+<span class="lineno">   84 </span><span class="spaces">    </span><span class="istickedoff">| state == ST_LPAREN = Lparen</span>
+<span class="lineno">   85 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">state == ST_RPAREN</span> = Rparen</span></span>
+<span class="lineno">   86 </span>
+<span class="lineno">   87 </span>isOperator :: Char -&gt; Bool
+<span class="lineno">   88 </span><span class="decl"><span class="istickedoff">isOperator = flip elem &quot;+-/*^%&quot;</span></span>
+<span class="lineno">   89 </span>
+<span class="lineno">   90 </span>notMinus :: Char -&gt; Bool
+<span class="lineno">   91 </span><span class="decl"><span class="istickedoff">notMinus x = isOperator x &amp;&amp; x /= '-'</span></span>
+<span class="lineno">   92 </span>
+<span class="lineno">   93 </span>notE :: Char -&gt; Bool
+<span class="lineno">   94 </span><span class="decl"><span class="istickedoff">notE x = isAlpha x &amp;&amp; x /= 'e'</span></span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span>transitionTable :: [Transition]
+<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">transitionTable = </span>
+<span class="lineno">   98 </span><span class="spaces">    </span><span class="istickedoff">[ Transition ST_START isDigit ST_INT</span>
+<span class="lineno">   99 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START isAlpha ST_ID</span>
+<span class="lineno">  100 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START isSpace ST_WS</span>
+<span class="lineno">  101 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START isOperator ST_OP</span>
+<span class="lineno">  102 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START (== '(') ST_LPAREN</span>
+<span class="lineno">  103 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START (== ')') ST_RPAREN</span>
+<span class="lineno">  104 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_START (== '.') ST_DEC</span>
+<span class="lineno">  105 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_INT isDigit ST_INT</span>
+<span class="lineno">  106 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_INT (== '.') ST_DEC</span>
+<span class="lineno">  107 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_INT (== 'e') ST_E</span>
+<span class="lineno">  108 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_E (\x -&gt; x == '-' || isDigit x) ST_EXP</span>
+<span class="lineno">  109 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_INT notE ST_NULL</span>
+<span class="lineno">  110 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_DEC isDigit ST_DEC</span>
+<span class="lineno">  111 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_DEC (== '.') ST_NULL</span>
+<span class="lineno">  112 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_DEC (== 'e') ST_EXP</span>
+<span class="lineno">  113 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_DEC notE ST_NULL</span>
+<span class="lineno">  114 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_EXP isDigit ST_EXP</span>
+<span class="lineno">  115 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_EXP (== '.') ST_NULL</span>
+<span class="lineno">  116 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_EXP isAlpha ST_NULL</span>
+<span class="lineno">  117 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_ID isAlpha ST_ID</span>
+<span class="lineno">  118 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_ID isDigit ST_NULL</span>
+<span class="lineno">  119 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_ID (== '.') ST_NULL</span>
+<span class="lineno">  120 </span><span class="spaces">    </span><span class="istickedoff">, Transition ST_OP notMinus ST_NULL</span>
+<span class="lineno">  121 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
+<span class="lineno">  122 </span>
+<span class="lineno">  123 </span>finalStates :: [State]
+<span class="lineno">  124 </span><span class="decl"><span class="istickedoff">finalStates =</span>
+<span class="lineno">  125 </span><span class="spaces">    </span><span class="istickedoff">[ ST_INT</span>
+<span class="lineno">  126 </span><span class="spaces">    </span><span class="istickedoff">, ST_WS</span>
+<span class="lineno">  127 </span><span class="spaces">    </span><span class="istickedoff">, ST_DEC</span>
+<span class="lineno">  128 </span><span class="spaces">    </span><span class="istickedoff">, ST_EXP</span>
+<span class="lineno">  129 </span><span class="spaces">    </span><span class="istickedoff">, ST_OP</span>
+<span class="lineno">  130 </span><span class="spaces">    </span><span class="istickedoff">, ST_ID</span>
+<span class="lineno">  131 </span><span class="spaces">    </span><span class="istickedoff">, ST_LPAREN</span>
+<span class="lineno">  132 </span><span class="spaces">    </span><span class="istickedoff">, ST_RPAREN</span>
+<span class="lineno">  133 </span><span class="spaces">    </span><span class="istickedoff">]</span></span>
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body>
+<pre>
+<span class="lineno">    1 </span>module Calculator.Parser(
+<span class="lineno">    2 </span>    fixNegs,
+<span class="lineno">    3 </span>    parse
+<span class="lineno">    4 </span>) where
+<span class="lineno">    5 </span>
+<span class="lineno">    6 </span>import Calculator.Data.Token
+<span class="lineno">    7 </span>import Data.Maybe
+<span class="lineno">    8 </span>
+<span class="lineno">    9 </span>fixNegs :: [Token] -&gt; [Token]
+<span class="lineno">   10 </span><span class="decl"><span class="istickedoff">fixNegs tokens = fixNegsAcc tokens [] Nothing</span></span>
+<span class="lineno">   11 </span>
+<span class="lineno">   12 </span>fixNegsAcc :: [Token] -&gt; [Token] -&gt; Maybe Token -&gt; [Token]
+<span class="lineno">   13 </span><span class="decl"><span class="istickedoff">fixNegsAcc [] acc _ = reverse acc</span>
+<span class="lineno">   14 </span><span class="spaces"></span><span class="istickedoff">fixNegsAcc (t:ts) acc prev</span>
+<span class="lineno">   15 </span><span class="spaces">    </span><span class="istickedoff">| isNothing prev =</span>
+<span class="lineno">   16 </span><span class="spaces">        </span><span class="istickedoff">if getKind t == Op &amp;&amp; getLex t == &quot;-&quot; then</span>
+<span class="lineno">   17 </span><span class="spaces">            </span><span class="istickedoff">fixNegsAcc ts (negToken:acc) $ Just <span class="nottickedoff">negToken</span></span>
+<span class="lineno">   18 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   19 </span><span class="spaces">            </span><span class="istickedoff">fixNegsAcc ts (t:acc) $ Just t</span>
+<span class="lineno">   20 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> =</span>
+<span class="lineno">   21 </span><span class="spaces">        </span><span class="istickedoff">if (getKind t == Op &amp;&amp; getLex t == &quot;-&quot;) &amp;&amp; (prevKind `elem` [Function, Op, Lparen]) then</span>
+<span class="lineno">   22 </span><span class="spaces">              </span><span class="istickedoff">fixNegsAcc ts (negToken:acc) $ Just <span class="nottickedoff">negToken</span></span>
+<span class="lineno">   23 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   24 </span><span class="spaces">            </span><span class="istickedoff">fixNegsAcc ts (t:acc) $ Just t</span>
+<span class="lineno">   25 </span><span class="spaces">   </span><span class="istickedoff">where prevKind = getKind $ fromJust prev</span>
+<span class="lineno">   26 </span><span class="spaces">         </span><span class="istickedoff">negToken = Token Function &quot;neg&quot;</span></span>        
+<span class="lineno">   27 </span>
+<span class="lineno">   28 </span>parse :: [Token] -&gt; [Token]
+<span class="lineno">   29 </span><span class="decl"><span class="istickedoff">parse tokens = parseAcc tokens [] []</span></span>
+<span class="lineno">   30 </span>
+<span class="lineno">   31 </span>parseAcc :: [Token] -&gt; [Token] -&gt; [Token] -&gt; [Token]
+<span class="lineno">   32 </span><span class="decl"><span class="istickedoff">parseAcc [] output [] = reverse output</span>
+<span class="lineno">   33 </span><span class="spaces"></span><span class="istickedoff">parseAcc [] output (op:ops)</span>
+<span class="lineno">   34 </span><span class="spaces">    </span><span class="istickedoff">| getKind op == Lparen = error &quot;ERROR: mismatched brackets&quot;</span>
+<span class="lineno">   35 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = parseAcc [] (op:output) ops</span>
+<span class="lineno">   36 </span><span class="spaces"></span><span class="istickedoff">parseAcc tokens@(t:ts) output opStack</span>
+<span class="lineno">   37 </span><span class="spaces">    </span><span class="istickedoff">| kind `elem` [Numeric, Id] = parseAcc ts (t:output) opStack</span>
+<span class="lineno">   38 </span><span class="spaces">    </span><span class="istickedoff">| kind == Op =</span>
+<span class="lineno">   39 </span><span class="spaces">        </span><span class="istickedoff">if null opStack || getKind (head opStack) == Lparen || precedence t &gt; precedence (head opStack) then</span>
+<span class="lineno">   40 </span><span class="spaces">            </span><span class="istickedoff">parseAcc ts output $ t:opStack</span>
+<span class="lineno">   41 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   42 </span><span class="spaces">            </span><span class="istickedoff">parseAcc tokens (head opStack : output) $ tail opStack</span>
+<span class="lineno">   43 </span><span class="spaces">    </span><span class="istickedoff">| kind == Lparen = parseAcc ts output (t:opStack)</span>
+<span class="lineno">   44 </span><span class="spaces">    </span><span class="istickedoff">| <span class="tickonlytrue">kind == Rparen</span> =</span>
+<span class="lineno">   45 </span><span class="spaces">        </span><span class="istickedoff">if null opStack then</span>
+<span class="lineno">   46 </span><span class="spaces">            </span><span class="istickedoff">error &quot;ERROR: mismatched brackets&quot;</span>
+<span class="lineno">   47 </span><span class="spaces">        </span><span class="istickedoff">else</span>
+<span class="lineno">   48 </span><span class="spaces">            </span><span class="istickedoff">let op = head opStack</span>
+<span class="lineno">   49 </span><span class="spaces">            </span><span class="istickedoff">in if getKind op == Lparen then</span>
+<span class="lineno">   50 </span><span class="spaces">                </span><span class="istickedoff">parseAcc ts output $ tail opStack</span>
+<span class="lineno">   51 </span><span class="spaces">            </span><span class="istickedoff">else</span>
+<span class="lineno">   52 </span><span class="spaces">                </span><span class="istickedoff">parseAcc tokens (op:output) $ tail opStack</span>
+<span class="lineno">   53 </span><span class="spaces">    </span><span class="istickedoff">where kind = getKind t</span></span>
+<span class="lineno">   54 </span>
+<span class="lineno">   55 </span>precedence :: Token -&gt; Int
+<span class="lineno">   56 </span><span class="decl"><span class="istickedoff">precedence t = case getLex t of</span>
+<span class="lineno">   57 </span><span class="spaces">    </span><span class="istickedoff">&quot;%&quot; -&gt; 0</span>
+<span class="lineno">   58 </span><span class="spaces">    </span><span class="istickedoff">&quot;+&quot; -&gt; 1</span>
+<span class="lineno">   59 </span><span class="spaces">    </span><span class="istickedoff">&quot;-&quot; -&gt; 1</span>
+<span class="lineno">   60 </span><span class="spaces">    </span><span class="istickedoff">&quot;*&quot; -&gt; 2</span>
+<span class="lineno">   61 </span><span class="spaces">    </span><span class="istickedoff">&quot;/&quot; -&gt; 2</span>
+<span class="lineno">   62 </span><span class="spaces">    </span><span class="istickedoff">&quot;^&quot; -&gt; 3</span>
+<span class="lineno">   63 </span><span class="spaces">    </span><span class="istickedoff">_ -&gt; <span class="nottickedoff">4</span></span></span> -- functions
+
+</pre>
+</body>
+</html>

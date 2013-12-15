@@ -17,7 +17,7 @@ main = serve Nothing myApp
 
 myApp :: ServerPart Response
 myApp = msum
-  [ dir "static"  $ serveDirectory DisableBrowsing [] "."
+  [ dir "resources"  $ serveDirectory DisableBrowsing [] "resources"
   , homePage
   ]
 
@@ -26,8 +26,8 @@ template title body = toResponse $
   H.html $ do
     H.head $ do
       H.title (toHtml title)
-      H.link ! A.rel "stylesheet" ! href "/static/css/bootstrap.min.css"
-      H.link ! A.rel "stylesheet" ! href "/static/css/homepage.css"
+      H.link ! A.rel "stylesheet" ! href "/resources/css/bootstrap.min.css"
+      H.link ! A.rel "stylesheet" ! href "/resources/css/homepage.css"
       H.script ! A.src  "//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" $ return ()
     H.body $ do
       header

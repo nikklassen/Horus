@@ -1,0 +1,29 @@
+#! /bin/sh
+
+CABAL_NAME=TextToMath
+CABAL_VER=0.1.0.0
+
+if [ ! -d "reports" ]; then
+    mkdir "reports"
+    mkdir "reports/mix"
+fi
+
+
+MIX_SRC=dist/hpc/mix/
+
+cp ${MIX_SRC}/Tests/* reports/mix
+cp -r ${MIX_SRC}/${CABAL_NAME}-${CABAL_VER}/${CABAL_NAME}-${CABAL_VER} reports/mix
+
+TIX=dist/hpc/tix/Tests/Tests.tix
+
+TEST_MODULES=(`find tests -name "*.hs" | sed -e "s/\.hs$//g" | sed -e "s/^tests\///g" | sed -e "s/\//\./g"`)
+
+EXCLUDES=" --exclude Calculator.Data.Token"
+for ITEM in ${TEST_MODULES[@]}; do
+    EXCLUDES="${EXCLUDES} --exclude ${ITEM}"
+done
+
+hpc report ${TIX} ${EXCLUDES} --hpcdir=reports/mix > reports/result
+hpc markup ${TIX} ${EXCLUDES} --hpcdir=reports/mix --destdir=reports/html
+
+open reports/html/hpc_index.html

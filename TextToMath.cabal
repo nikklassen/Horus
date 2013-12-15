@@ -13,14 +13,17 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.8
 build-depends:       
-                     
                      cabal ==1.8.*
 library
     hs-source-dirs: src
-    build-depends: base
+    build-depends: base,
+                   numbers,
+                   containers
+    GHC-Options: -O2 -Wall
     exposed-modules: Calculator,
                      Calculator.Parser,
-                     Calculator.Scanner
+                     Calculator.Scanner,
+                     Calculator.Data.Token
 
 executable TextToMath
     hs-source-dirs: textToMath-web
@@ -34,10 +37,11 @@ executable TextToMath
 
 test-suite Tests
     type: exitcode-stdio-1.0
-    main-is: Tests.hs
+    main-is: TestSuite.hs
     hs-source-dirs: tests
     build-depends: base,
                    TextToMath,
+                   testpack,
                    test-framework ==0.8.*,
                    test-framework-hunit ==0.3.*,
                    HUnit ==1.2.*

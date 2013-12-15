@@ -1,52 +1,52 @@
 module Calculator.Parser(
+    fixNegs,
     parse
 ) where
 
-import Calculator.Scanner
+import Calculator.Data.Token
+import Data.Maybe
 
-fixNegs :: [Token] -> Either String [Token]
-fixNegs tokens = fixNegsAcc tokens []
+fixNegs :: [Token] -> [Token]
+fixNegs tokens = fixNegsAcc tokens [] Nothing
 
-fixNegsAcc :: [Token] -> [Token] -> Either String [Token]
-fixNegsAcc [] acc = Right acc
-fixNegsAcc (t:ts) acc
-    | (getKind t) `elem` [Lparen, Op] =
-        if null ts then
-           Left $ "ERROR: Incomplete expression"
+fixNegsAcc :: [Token] -> [Token] -> Maybe Token -> [Token]
+fixNegsAcc [] acc _ = reverse acc
+fixNegsAcc (t:ts) acc prev
+    | isNothing prev =
+        if getKind t == Op && getLex t == "-" then
+            fixNegsAcc ts (negToken:acc) $ Just negToken
         else
-           let next = head ts
-           in if (getLex next) == "-" then
-                 if length ts < 2 then
-                    Left "ERROR: Incomplete expression"
-                 else let value = (ts !! 1)
-                      in if (getKind value) /= Numeric then
-                           Left $ "Invalid token " ++ (getLex value)
-                         else fixNegsAcc (drop 2 ts) $ t : (Token Numeric $ '-' : getLex value) : acc
-           else fixNegsAcc ts (t:acc)
-    | otherwise = fixNegsAcc ts (t:acc)
+            fixNegsAcc ts (t:acc) $ Just t
+    | otherwise =
+        if (getKind t == Op && getLex t == "-") && (prevKind `elem` [Function, Op, Lparen]) then
+              fixNegsAcc ts (negToken:acc) $ Just negToken
+        else
+            fixNegsAcc ts (t:acc) $ Just t
+   where prevKind = getKind $ fromJust prev
+         negToken = Token Function "neg"        
 
-parse :: [Token] -> Either String [Token]
+parse :: [Token] -> [Token]
 parse tokens = parseAcc tokens [] []
 
-parseAcc :: [Token] -> [Token] -> [Token] -> Either String [Token]
-parseAcc [] output [] = Right output
-parseAcc [] output opStack@(op:ops)
-    | getKind op == Lparen = Left "ERROR: mismatch brackets"
+parseAcc :: [Token] -> [Token] -> [Token] -> [Token]
+parseAcc [] output [] = reverse output
+parseAcc [] output (op:ops)
+    | getKind op == Lparen = error "ERROR: mismatched brackets"
     | otherwise = parseAcc [] (op:output) ops
-parseAcc tokens@(t:ts) output opStack@(op:ops)
+parseAcc tokens@(t:ts) output opStack
     | kind `elem` [Numeric, Id] = parseAcc ts (t:output) opStack
-    | kind == Op =
-        if null opStack || precedence t > (precedence $ head opStack) then
+    | kind `elem` [Op, Function] =
+        if null opStack || getKind (head opStack) == Lparen || precedence t > precedence (head opStack) then
             parseAcc ts output $ t:opStack
         else
-            parseAcc tokens ((head opStack):output) $ tail opStack
-    | kind == Lparen = parseAcc ts output $ t:opStack
+            parseAcc tokens (head opStack : output) $ tail opStack
+    | kind == Lparen = parseAcc ts output (t:opStack)
     | kind == Rparen =
         if null opStack then
-            Left "ERROR: mismatched brackets"
+            error "ERROR: mismatched brackets"
         else
             let op = head opStack
-            in if (getKind op) == Lparen then
+            in if getKind op == Lparen then
                 parseAcc ts output $ tail opStack
             else
                 parseAcc tokens (op:output) $ tail opStack
@@ -60,3 +60,4 @@ precedence t = case getLex t of
     "*" -> 2
     "/" -> 2
     "^" -> 3
+    _ -> 4 -- functions

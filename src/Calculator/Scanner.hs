@@ -1,21 +1,14 @@
 module Calculator.Scanner (
     scan,
-    Kind(..),
     Token(..)
 ) where
 
-import Data.Char
+import Data.Char(isAlpha,isDigit,isSpace)
 import Data.List
 import Data.Maybe
-import Control.Applicative
-import Control.Exception
-
-data Kind = Op
-          | Numeric
-          | Id
-          | Lparen
-          | Rparen
-          deriving(Eq,Show)
+import Control.Applicative()
+import Control.Exception()
+import Calculator.Data.Token
 
 data State = ST_START
            | ST_INT
@@ -36,24 +29,18 @@ data Transition = Transition {
     getToState :: State
 }
 
-data Token = Token {
-    getKind :: Kind,
-    getLex :: String
-} deriving( Eq, Show )
-
-scan :: String -> Either String [Token]
+scan :: String -> [Token]
 scan str = scanAcc str transitionTable ST_START finalStates "" []
 
-scanAcc :: String -> [Transition] -> State -> [State] -> String -> [Token] -> Either String [Token]
+scanAcc :: String -> [Transition] -> State -> [State] -> String -> [Token] -> [Token]
 scanAcc [] _ cState fStates lexAcc tokAcc
     | cState `elem` fStates =
-        Right ( reverse $
-            if cState == ST_WS then
-                tokAcc
-            else
-                makeToken cState (reverse lexAcc) : tokAcc
-        )
-    | otherwise = Left "ERROR: unexpected end of string\n"
+        reverse $
+        if cState == ST_WS then
+            tokAcc
+        else
+            makeToken cState (reverse lexAcc) : tokAcc
+    | otherwise = error "ERROR: unexpected end of string"
 
 scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =
     let
@@ -68,19 +55,24 @@ scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =
                     makeToken cState (reverse lexAcc) : tokAcc
             )
         else
-            Left $ "ERROR: Left to parse " ++ show cState ++ " " ++ str
+            error $ "ERROR: Left to parse " ++ show cState ++ " " ++ str
     else
         let
             toState = getToState $ fromJust tr
         in if toState == ST_NULL then
-            Left $ "ERROR: Invalid symbol " ++ [chr]
+            error $ "ERROR: Invalid symbol " ++ [chr]
         else
             scanAcc chrs trTable toState fStates (chr:lexAcc) tokAcc
 
 makeToken :: State -> String -> Token
-makeToken state lex
-    | kind == Numeric && (head lex) == '.' = Token kind ('0':lex)
-    | otherwise = Token kind lex
+makeToken state lexeme
+    | kind == Numeric && head lexeme == '.' = Token kind ('0':lexeme)
+    | kind == Id =
+        if lexeme `elem` ["sin","cos","tan","asin","acos","atan"] then
+           Token Function lexeme
+        else
+            Token Id lexeme
+    | otherwise = Token kind lexeme
     where kind = stateToKind state
 
 stateToKind :: State -> Kind
@@ -91,10 +83,16 @@ stateToKind state
     | state == ST_LPAREN = Lparen
     | state == ST_RPAREN = Rparen
 
+isOperator :: Char -> Bool
 isOperator = flip elem "+-/*^%"
+
+notMinus :: Char -> Bool
 notMinus x = isOperator x && x /= '-'
+
+notE :: Char -> Bool
 notE x = isAlpha x && x /= 'e'
 
+transitionTable :: [Transition]
 transitionTable = 
     [ Transition ST_START isDigit ST_INT
     , Transition ST_START isAlpha ST_ID
@@ -121,6 +119,7 @@ transitionTable =
     , Transition ST_OP notMinus ST_NULL
     ]
 
+finalStates :: [State]
 finalStates =
     [ ST_INT
     , ST_WS
