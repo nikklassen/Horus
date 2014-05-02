@@ -4,11 +4,9 @@ module Snippets(
     header
 ) where
 
-import Text.Blaze.Html5 (Html, (!), a, toHtml, button, li, ul)
-import Text.Blaze.Html5.Attributes (class_, type_, href)
-import Text.Blaze.Internal (dataAttribute)
+import Text.Blaze.Html5 (Html, (!))
+import Text.Blaze.Html5.Attributes (class_)
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
 
 header :: Html
 header =

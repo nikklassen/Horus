@@ -9,6 +9,7 @@ data Kind = Op
           | Function
           | Lparen
           | Rparen
+          | Eql
           deriving(Eq,Show)
 
 data Token = Token {

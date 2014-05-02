@@ -20,6 +20,7 @@ data State = ST_START
            | ST_ID
            | ST_LPAREN
            | ST_RPAREN
+           | ST_EQL
            | ST_NULL
            deriving(Eq,Show)
 
@@ -40,7 +41,7 @@ scanAcc [] _ cState fStates lexAcc tokAcc
             tokAcc
         else
             makeToken cState (reverse lexAcc) : tokAcc
-    | otherwise = error "ERROR: unexpected end of string"
+    | otherwise = error $ "ERROR: Ended in unacceptable state " ++ show cState
 
 scanAcc str@(chr:chrs) trTable cState fStates lexAcc tokAcc =
     let
@@ -82,6 +83,7 @@ stateToKind state
     | state == ST_ID = Id
     | state == ST_LPAREN = Lparen
     | state == ST_RPAREN = Rparen
+    | state == ST_EQL = Eql
 
 isOperator :: Char -> Bool
 isOperator = flip elem "+-/*^%"
@@ -101,6 +103,7 @@ transitionTable =
     , Transition ST_START (== '(') ST_LPAREN
     , Transition ST_START (== ')') ST_RPAREN
     , Transition ST_START (== '.') ST_DEC
+    , Transition ST_START (== '=') ST_EQL
     , Transition ST_INT isDigit ST_INT
     , Transition ST_INT (== '.') ST_DEC
     , Transition ST_INT (== 'e') ST_E
@@ -129,4 +132,5 @@ finalStates =
     , ST_ID
     , ST_LPAREN
     , ST_RPAREN
+    , ST_EQL
     ]

@@ -1,6 +1,7 @@
 module Calculator.Parser(
     fixNegs,
-    parse
+    parse,
+    getEquation
 ) where
 
 import Calculator.Data.Token
@@ -51,6 +52,18 @@ parseAcc tokens@(t:ts) output opStack
             else
                 parseAcc tokens (op:output) $ tail opStack
     where kind = getKind t
+
+getEquation :: [Token] -> ([Token], [Token])
+getEquation tokens =
+    let (lhs, rhs) = break (\t -> getKind t == Eql) tokens
+    in if null rhs then
+        -- With no equals sign, put everything in the "rhs"
+        (rhs, lhs)
+    else if null lhs then
+        error "ERROR: Expected lhs"
+    else
+        -- Don't return the equals sign
+        (lhs, drop 1 rhs)
 
 precedence :: Token -> Int
 precedence t = case getLex t of

@@ -7,7 +7,7 @@ import Test.Framework.Providers.HUnit
 import Test.HUnit
 import Control.Exception(ErrorCall(..), evaluate)
 import Calculator.Scanner
-import Calculator.Data.Token()
+import Calculator.Data.Token
 import Test.HUnit.Tools
 
 instance Eq ErrorCall where
@@ -22,7 +22,8 @@ tests = [ testGroup "Simple" [
             testCase "Id" scanId,
             testCase "Brackets" scanBrack,
             testCase "Whitespace" scanWhitespace,
-            testCase "Functions" scanFuncs
+            testCase "Functions" scanFuncs,
+            testCase "Equals sign" scanEqls
             ]
         , testGroup "Simple - Errors" [
             testCase "Int-Id" scanIntId,
@@ -75,6 +76,8 @@ scanFuncs = scan "sin cos tan asin acos atan" @?=
     , Token Function "atan"
     ]
 
+scanEqls = scan "=" @?= [Token Eql "="]
+
 scanIntId = assertRaises "" (ErrorCall "ERROR: Invalid symbol a") (evaluate $ scan "123abc")
 
 scanDecId = assertRaises "" (ErrorCall "ERROR: Invalid symbol a") (evaluate $ scan "1.23abc")
@@ -91,12 +94,14 @@ scanDecDec = assertRaises "" (ErrorCall "ERROR: Invalid symbol .") (evaluate $ s
 
 scanExpDec = assertRaises "" (ErrorCall "ERROR: Invalid symbol .") (evaluate $ scan "12e3.4")
 scanExpExp = assertRaises "" (ErrorCall "ERROR: Invalid symbol e") (evaluate $ scan "12e42e9")
-scanUnfinExp = assertRaises "" (ErrorCall "ERROR: unexpected end of string") (evaluate $ scan "123e")
+scanUnfinExp = assertRaises "" (ErrorCall "ERROR: Ended in unacceptable state ST_E") (evaluate $ scan "123e")
 scanOpOp = assertRaises "" (ErrorCall "ERROR: Invalid symbol *") (evaluate $ scan "+*")
 scanOpNegOp = assertRaises "" (ErrorCall "ERROR: Invalid symbol /") (evaluate $ scan "*-/")
 
-scanBig = scan "(8*9e10+(7.289 / 3) % x -10)" @?=
-    [ Token Lparen "("
+scanBig = scan "c=(8*9e10+(7.289 / 3) % x -10)" @?=
+    [ Token Id "c"
+    , Token Eql "="
+    , Token Lparen "("
     , Token Numeric "8"
     , Token Op "*"
     , Token Numeric "9e10"
