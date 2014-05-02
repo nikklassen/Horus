@@ -1,5 +1,8 @@
 dist
 cabal-dev
+tags
+reports
+resources
 *.o
 *.hi
 *.chi

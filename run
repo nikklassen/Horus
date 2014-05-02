@@ -1,4 +1,4 @@
 #!/bin/bash
-
-cd dist
-build/TextToMath/TextToMath
+cabal configure
+cabal build
+sudo dist/build/TextToMath/TextToMath

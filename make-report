@@ -8,7 +8,6 @@ if [ ! -d "reports" ]; then
     mkdir "reports/mix"
 fi
 
-
 MIX_SRC=dist/hpc/mix/
 
 cp ${MIX_SRC}/Tests/* reports/mix
@@ -16,10 +15,10 @@ cp -r ${MIX_SRC}/${CABAL_NAME}-${CABAL_VER}/${CABAL_NAME}-${CABAL_VER} reports/m
 
 TIX=dist/hpc/tix/Tests/Tests.tix
 
-TEST_MODULES=(`find tests -name "*.hs" | sed -e "s/\.hs$//g" | sed -e "s/^tests\///g" | sed -e "s/\//\./g"`)
+TEST_MODULES=$(find tests -name "*.hs" | sed -e "s/\.hs$//g" | sed -e "s/^tests\///g" | sed -e "s/\//\./g")
 
 EXCLUDES=" --exclude Calculator.Data.Token"
-for ITEM in ${TEST_MODULES[@]}; do
+for ITEM in ${TEST_MODULES}; do
     EXCLUDES="${EXCLUDES} --exclude ${ITEM}"
 done
 
