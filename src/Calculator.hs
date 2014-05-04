@@ -36,34 +36,29 @@ evaluate :: [Token] -> Map String CReal -> Maybe CReal
 evaluate tokens variables = listToMaybe $ foldl (performOperation $ variables) [] tokens
 
 performOperation :: Map String CReal -> [CReal] -> Token -> [CReal]
-performOperation variables stack@(s1:s2:ss) token
+performOperation variables stack token
     | kind == Function =
         if null stack then
             error $ "Missing arguments for lex " ++ lexeme
         else
-            ((fromJust $ Map.lookup lexeme functions) s1):s2:ss
+            let (s1:ss) = stack
+            in  ((fromJust $ Map.lookup lexeme functions) s1):ss
     | kind == Op =
-        (operate lexeme s1 s2):ss
+        if length stack < 2 then
+            error $ "Missing arguments for operation " ++ lexeme
+        else
+            let (s1:s2:ss) = stack
+            in (operate lexeme s1 s2):ss
     | kind == Numeric =
         (toNumber lexeme):stack
     | kind == Id =
-        (getVariable lexeme variables):stack
+        let val = case Map.lookup lexeme variables of
+                      Just v -> v
+                      Nothing -> error $ "ERROR: Use of undefined variable " ++ lexeme
+        in val:stack
     | otherwise = error $ "Invalid operation " ++ lexeme
     where kind = getKind token
           lexeme = getLex token
-performOperation variables stack token
-    | kind == Numeric =
-        (toNumber lexeme):stack
-    | kind == Id =
-        (getVariable lexeme variables):stack
-    | otherwise = error $ "Invalid operation " ++ lexeme
-    where lexeme = getLex token
-          kind = getKind token
-
-getVariable :: String -> Map String CReal -> CReal
-getVariable lexeme variables = case Map.lookup lexeme variables of
-                                    Just v -> v
-                                    Nothing -> error $ "ERROR: Use of undefined variable " ++ lexeme
         
 isFunction :: String -> Bool
 isFunction = flip Map.member functions

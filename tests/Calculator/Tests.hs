@@ -42,6 +42,7 @@ tests = [ testGroup "Numbers" [
             testCase "Binary operations" calc_binary
             , testCase "Order of operations" calc_bedmas
             , testCase "Parentheses" calc_parens
+            , testCase "Functions" calc_func
             , testCase "Variable substition" calc_vars
             , testCase "Variable assignment" calc_add_var
             , testCase "Replace existing var" calc_replace_var
@@ -76,6 +77,8 @@ calc_binary = calculate "4 + 5 - 9" emptyMap @?= Result (Just 0) emptyMap
 calc_bedmas = calculate "6 * 2 + 10 / 5 - 2^2 % 3" emptyMap @?= Result (Just 1) emptyMap
 
 calc_parens = calculate "6 * (2 + 10) / (5 - 2)^(2 % 3)" emptyMap @?= Result (Just 8) emptyMap
+
+calc_func = calculate "sin 1" emptyMap @?= Result (Just $ sin 1) emptyMap
 
 calc_empty = calculate "" emptyMap @?= Result Nothing emptyMap
 
