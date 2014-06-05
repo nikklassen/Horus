@@ -1,8 +1,9 @@
 module Calculator where
 
-import qualified Calculator.Scanner as S
+import qualified Calculator.Lexer as L
 import qualified Calculator.Parser as P
 import Calculator.Data.Token
+import Calculator.Functions
 import Data.Number.CReal
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -16,7 +17,7 @@ data Result = Result {
 calculate :: String -> Map String CReal -> Result
 calculate "" variables = Result Nothing variables
 calculate expression variables =
-    let (lhs, rhs) = P.getEquation $ P.fixNegs $ S.scan expression
+    let (lhs, rhs) = P.getEquation $ P.fixNegs $ L.scan expression
         result = evaluate (P.parse rhs) variables
     in Result result $ addToVars lhs result variables
 
@@ -42,7 +43,7 @@ performOperation variables stack token
             error $ "Missing arguments for lex " ++ lexeme
         else
             let (s1:ss) = stack
-            in  ((fromJust $ Map.lookup lexeme functions) s1):ss
+            in  ((fromJust $ getFunction lexeme) s1):ss
     | kind == Op =
         if length stack < 2 then
             error $ "Missing arguments for operation " ++ lexeme
@@ -60,19 +61,6 @@ performOperation variables stack token
     where kind = getKind token
           lexeme = getLex token
         
-isFunction :: String -> Bool
-isFunction = flip Map.member functions
-
-functions = Map.fromList
-    [ ("sin", sin)
-    , ("cos", cos)
-    , ("tan", tan)
-    , ("asin", asin)
-    , ("acos", acos)
-    , ("atan", atan)
-    , ("neg", negate)
-    ]
-
 toNumber :: String -> CReal
 toNumber num
     | 'e' `elem` num =

@@ -18,11 +18,14 @@ library
     hs-source-dirs: src
     build-depends: base,
                    numbers,
-                   containers
+                   containers,
+                   parsec
+
     GHC-Options: -O2 -Wall
     exposed-modules: Calculator,
                      Calculator.Parser,
-                     Calculator.Scanner,
+                     Calculator.Lexer,
+                     Calculator.Functions,
                      Calculator.Data.Token
 
 executable TextToMath

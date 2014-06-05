@@ -1,17 +1,21 @@
-module Calculator.Scanner.Tests (
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module Calculator.Lexer.Tests (
     tests
 ) where
 
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 import Test.HUnit
-import Control.Exception(ErrorCall(..), evaluate)
-import Calculator.Scanner
+import Control.Exception (ErrorCall(..), evaluate, catch)
+import Calculator.Lexer
 import Calculator.Data.Token
-import Test.HUnit.Tools
 
 instance Eq ErrorCall where
     x == y = show x == show y
+
+assertException :: IO a -> Assertion
+assertException action = (action >> assertFailure "") `Control.Exception.catch` \ (_ :: ErrorCall) -> assertBool "" True
 
 tests = [ testGroup "Simple" [
             testCase "Int" scanInt,
@@ -30,14 +34,11 @@ tests = [ testGroup "Simple" [
             testCase "Dec-Id" scanDecId,
             testCase "Exp-Id" scanExpId,
             testCase "Exp-Id 2" scanExpId2,
-            testCase "Id-Int" scanIdInt,
             testCase "Id-Decimal" scanIdDec,
             testCase "Double decimal" scanDecDec,
             testCase "Exp with decimal" scanExpDec,
             testCase "Exp-Exp" scanExpExp,
-            testCase "Unfinished exp" scanUnfinExp,
-            testCase "Double op" scanOpOp,
-            testCase "Op minus op" scanOpNegOp
+            testCase "Unfinished exp" scanUnfinExp
             ]
         , testCase "Big" scanBig
         , testCase "Add negative" scanAddNeg
@@ -56,11 +57,20 @@ scanOps = scan "- * / + ^ %" @?=
 
 scanDec = scan "0.9 .8" @?=
     [ Token Numeric "0.9"
-    , Token Numeric "0.8" ]
+    , Token Numeric ".8" ]
 
-scanExp = scan "9e10" @?= [Token Numeric "9e10"]
+scanExp = scan "9e10 9e-10" @?=
+    [ Token Numeric "9e10"
+    , Token Numeric "9e-10"
+    ]
+
 scanDecExp = scan "2.3e2" @?= [Token Numeric "2.3e2"]
-scanId = scan "thisisateststring" @?= [Token Id "thisisateststring"]
+
+scanId = scan "thisisateststring abc123" @?=
+    [ Token Id "thisisateststring"
+    , Token Id "abc123"
+    ]
+
 scanBrack = scan "()" @?=
     [ Token Lparen "("
     , Token Rparen ")" ]
@@ -78,25 +88,23 @@ scanFuncs = scan "sin cos tan asin acos atan" @?=
 
 scanEqls = scan "=" @?= [Token Eql "="]
 
-scanIntId = assertRaises "" (ErrorCall "ERROR: Invalid symbol a") (evaluate $ scan "123abc")
+scanIntId = assertException (evaluate $ scan "123abc")
 
-scanDecId = assertRaises "" (ErrorCall "ERROR: Invalid symbol a") (evaluate $ scan "1.23abc")
+scanDecId = assertException (evaluate $ scan "1.23abc")
 
-scanExpId = assertRaises "" (ErrorCall "ERROR: Invalid symbol a") (evaluate $ scan "12e3abc")
+scanExpId = assertException (evaluate $ scan "12e3abc")
 
-scanExpId2 = assertRaises "" (ErrorCall "ERROR: Left to parse ST_E abc") (evaluate $ scan "12eabc")
+scanExpId2 = assertException (evaluate $ scan "12eabc")
 
-scanIdInt = assertRaises "" (ErrorCall "ERROR: Invalid symbol 1") (evaluate $ scan "abc123")
+scanIdDec = assertException (evaluate $ scan "abc.234")
 
-scanIdDec = assertRaises "" (ErrorCall "ERROR: Invalid symbol .") (evaluate $ scan "abc.234")
+scanDecDec = assertException (evaluate $ scan "12.34.56")
 
-scanDecDec = assertRaises "" (ErrorCall "ERROR: Invalid symbol .") (evaluate $ scan "12.34.56")
+scanExpDec = assertException (evaluate $ scan "12e3.4")
 
-scanExpDec = assertRaises "" (ErrorCall "ERROR: Invalid symbol .") (evaluate $ scan "12e3.4")
-scanExpExp = assertRaises "" (ErrorCall "ERROR: Invalid symbol e") (evaluate $ scan "12e42e9")
-scanUnfinExp = assertRaises "" (ErrorCall "ERROR: Ended in unacceptable state ST_E") (evaluate $ scan "123e")
-scanOpOp = assertRaises "" (ErrorCall "ERROR: Invalid symbol *") (evaluate $ scan "+*")
-scanOpNegOp = assertRaises "" (ErrorCall "ERROR: Invalid symbol /") (evaluate $ scan "*-/")
+scanExpExp = assertException (evaluate $ scan "12e42e9")
+
+scanUnfinExp = assertException (evaluate $ scan "123e")
 
 scanBig = scan "c=(8*9e10+(7.289 / 3) % x -10)" @?=
     [ Token Id "c"

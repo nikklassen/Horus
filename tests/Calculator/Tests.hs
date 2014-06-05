@@ -29,9 +29,7 @@ tests = [ testGroup "Numbers" [
             , testCase "Double" parseDouble
             ]
         , testGroup "Operations" [
-            testCase "IsFunction" testIsFunction
-            , testCase "IsNotFunction" testIsNotFunction
-            , testCase "Plus op" plusOp
+            testCase "Plus op" plusOp
             , testCase "Minus op" minusOp
             , testCase "Mult op" multOp
             , testCase "Div op" divOp
@@ -59,9 +57,6 @@ tests = [ testGroup "Numbers" [
 parseExp = toNumber "3e2" @?= 300
 parseNegExp = toNumber "5e-1" @?= 0.5
 parseDouble = toNumber "10.23" @?= 10.23
-
-testIsFunction = isFunction "neg" @?= True
-testIsNotFunction = isFunction "foo" @?= False
 
 plusOp = operate "+" 1 2 @?= 3
 minusOp = operate "-" 5 2 @?= -3
