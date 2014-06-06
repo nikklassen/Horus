@@ -12,9 +12,6 @@ import Test.HUnit.Tools
 import Control.DeepSeq
 import Data.Number.CReal
 
-instance Eq ErrorCall where
-    x == y = show x == show y
-
 instance NFData CReal
 
 instance NFData Result where

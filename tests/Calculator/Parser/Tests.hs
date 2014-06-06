@@ -9,9 +9,6 @@ import Control.Exception(ErrorCall(..), evaluate)
 import Calculator.Lexer
 import Test.HUnit.Tools
 
-instance Eq ErrorCall where
-    x == y = show x == show y
-
 tests = []
 
 {--

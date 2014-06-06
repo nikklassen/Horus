@@ -11,9 +11,6 @@ import Control.Exception (ErrorCall(..), evaluate, catch)
 import Calculator.Data.AST
 import Calculator.Lexer
 
-instance Eq ErrorCall where
-    x == y = show x == show y
-
 assertException :: IO AST -> Assertion
 assertException action =
     (do
