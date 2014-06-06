@@ -23,10 +23,9 @@ library
 
     GHC-Options: -O2 -Wall
     exposed-modules: Calculator,
-                     Calculator.Parser,
                      Calculator.Lexer,
                      Calculator.Functions,
-                     Calculator.Data.Token
+                     Calculator.Data.AST
 
 executable TextToMath
     hs-source-dirs: textToMath-web

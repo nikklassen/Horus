@@ -1,22 +1,23 @@
 module Calculator.Lexer (
-    scan
+    parse
 ) where
 
-import Calculator.Data.Token
 import Text.Parsec.Char
-import Text.Parsec.Prim (many, parse, (<?>))
-import Text.Parsec.Combinator (many1, option, choice, notFollowedBy, sepEndBy)
+import Text.Parsec.Prim (many, (<?>), (<|>), try)
+import qualified Text.Parsec.Prim as Parsec (parse)
+import Text.Parsec.Combinator (many1, option, choice, eof)
 import Text.Parsec.String
-import Control.Applicative ((<$>), (<*>))
+import Control.Applicative ((<$>), (<*>), (*>), (<*))
+import Text.Parsec.Expr
+
+import Calculator.Data.AST (AST(..))
+import qualified Calculator.Data.AST as AST
 import Calculator.Functions
 
 (<:>) a b = (:) <$> a <*> b
 (<++>) a b = (++) <$> a <*> b
 
 -- Helper Parsers
-charToString :: Char -> String
-charToString c = [c]
-
 number :: Parser String
 number = many1 digit
 
@@ -30,55 +31,67 @@ decimal = (char '.' <:> number) <++> (option "" power)
 float :: Parser String
 float = number <++> (option "" decimal) <++> (option "" power)
 
--- Token Parsers
-
-numeric :: Parser Token
-numeric = (Token Numeric) <$> choice [decimal, float]
-
-identifier :: Parser Token
+identifier :: Parser String
 identifier = do
     h <- letter
     e <- many alphaNum
-    let lexeme = (h : e)
-    return $ if isFunction lexeme then
-        Token Function lexeme
+    return $ h:e
+
+-- Grammar
+numeric :: Parser AST
+numeric = AST.toNumber <$> choice [decimal, float]
+
+varOrFunction :: Parser AST
+varOrFunction = do
+    f <- identifier
+    if isFunction f then
+        do
+            _ <- char '(' 
+            e <- expr
+            _ <- char ')'
+            return $ Function f e
         else
-            Token Id lexeme
+            return $ Var f
 
--- Prevents numbers from being followed by an id
--- or ids from being followed by a numeric other than "number"
-numericOrIdentifier :: Parser Token
-numericOrIdentifier = do
-                        a <- choice [identifier, numeric]
-                        notFollowedBy (choice [identifier, numeric]) <?> "whitespace"
-                        return a
+statement :: Parser AST
+statement = (try (do
+                i <- identifier
+                spaces
+                _ <- char '='
+                spaces
+                e <- expr
+                return $ EqlStmt (Var i) e)
+            <|> expr) <* eof
+            <?> "expr"
 
-lParen :: Parser Token
-lParen = (Token Lparen . charToString) <$> char '('
+expr :: Parser AST
+expr = buildExpressionParser operators term
 
-rParen :: Parser Token
-rParen = (Token Rparen . charToString) <$> char ')'
+operators = [ [ binary '^' (OpExpr "^") AssocRight ]
+            , [ binary '*' (OpExpr "*") AssocLeft
+              , binary '/' (OpExpr "/") AssocLeft
+              ]
+            , [ binary '+' (OpExpr "+") AssocLeft
+              , binary '-' (OpExpr "-") AssocLeft
+              ]
+            , [ binary '%' (OpExpr "%") AssocLeft ]
+            ]
+            where binary op func assoc = Infix (char op >> return func) assoc
 
-equals :: Parser Token
-equals = (Token Eql . charToString) <$> char '='
-
-operator :: Parser Token
-operator = (Token Op . charToString) <$> oneOf "-+/*%^"
-                                     <?> "operator"
- 
--- Master token parser
-tokens :: Parser [Token]
-tokens = do
+term :: Parser AST
+term = do
+    t <- ((many1 space >> term)
+         <|> (char '-' >> Neg <$> term)
+         <|> enclosed '(' expr ')'
+         <|> enclosed '[' expr ']'
+         <|> varOrFunction
+         <|> numeric
+         <?> "term")
     spaces
-    sepEndBy (choice [ equals
-                          , lParen
-                          , rParen
-                          , numericOrIdentifier -- this has to be before operator to give binary operators precedence
-                          , operator
-                          ])
-                  spaces
+    return t
+    where enclosed c1 e c2 = char c1 *> e <* char c2
 
-scan :: String -> [Token]
-scan s = case parse tokens "" s of
+parse :: String -> AST
+parse s = case Parsec.parse statement "" s of
             Left err -> error $ "ERROR: " ++ (show err)
             Right ts -> ts

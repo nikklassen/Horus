@@ -1,9 +1,6 @@
 module Calculator where
 
 import qualified Calculator.Lexer as L
-import qualified Calculator.Parser as P
-import Calculator.Data.Token
-import Calculator.Functions
 import Data.Number.CReal
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -15,6 +12,8 @@ data Result = Result {
 } deriving (Eq, Show)
 
 calculate :: String -> Map String CReal -> Result
+calculate _ _ = Result Nothing $ Map.fromList []
+{--
 calculate "" variables = Result Nothing variables
 calculate expression variables =
     let (lhs, rhs) = P.getEquation $ P.fixNegs $ L.scan expression
@@ -82,3 +81,4 @@ operate op n1 n2 =
 
 realMod :: CReal -> CReal -> CReal
 realMod a b = a - (fromInteger $ floor $ a/b) * b
+--}

@@ -8,127 +8,97 @@ import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 import Test.HUnit
 import Control.Exception (ErrorCall(..), evaluate, catch)
+import Calculator.Data.AST
 import Calculator.Lexer
-import Calculator.Data.Token
 
 instance Eq ErrorCall where
     x == y = show x == show y
 
-assertException :: IO a -> Assertion
-assertException action = (action >> assertFailure "") `Control.Exception.catch` \ (_ :: ErrorCall) -> assertBool "" True
+assertException :: IO AST -> Assertion
+assertException action =
+    (do
+        result <- action
+        assertFailure $ "Expected exception, got " ++ (show result))
+    `Control.Exception.catch` \ (_ :: ErrorCall) -> assertBool "" True
 
 tests = [ testGroup "Simple" [
-            testCase "Int" scanInt,
-            testCase "Operators" scanOps,
-            testCase "Decimal" scanDec,
-            testCase "Exp" scanExp,
-            testCase "Decimal with Exp" scanDecExp,
-            testCase "Id" scanId,
-            testCase "Brackets" scanBrack,
-            testCase "Whitespace" scanWhitespace,
-            testCase "Functions" scanFuncs,
-            testCase "Equals sign" scanEqls
+            testCase "Int" parseInt,
+            testCase "Operators" parseOps,
+            testCase "Decimal" parseDec,
+            testCase "Exp" parseExp,
+            testCase "Decimal with Exp" parseDecExp,
+            testCase "Id" parseId,
+            testCase "Brackets" parseBrack,
+            testCase "Whitespace" parseWhitespace,
+            testCase "Functions" parseFuncs,
+            testCase "Equals sign" parseEqls,
+            testCase "Negative" parseNeg
             ]
         , testGroup "Simple - Errors" [
-            testCase "Int-Id" scanIntId,
-            testCase "Dec-Id" scanDecId,
-            testCase "Exp-Id" scanExpId,
-            testCase "Exp-Id 2" scanExpId2,
-            testCase "Id-Decimal" scanIdDec,
-            testCase "Double decimal" scanDecDec,
-            testCase "Exp with decimal" scanExpDec,
-            testCase "Exp-Exp" scanExpExp,
-            testCase "Unfinished exp" scanUnfinExp
+            testCase "Int-Id" parseIntId,
+            testCase "Dec-Id" parseDecId,
+            testCase "Exp-Id" parseExpId,
+            testCase "Exp-Id 2" parseExpId2,
+            testCase "Id-Decimal" parseIdDec,
+            testCase "Double decimal" parseDecDec,
+            testCase "Exp with decimal" parseExpDec,
+            testCase "Exp-Exp" parseExpExp,
+            testCase "Unfinished exp" parseUnfinExp,
+            testCase "Double term" parseDoubleTerm,
+            testCase "Equals number" parseEqlNum
             ]
-        , testCase "Big" scanBig
-        , testCase "Add negative" scanAddNeg
+        , testCase "Big" parseBig
         ]
 
-scanInt = scan "0123456789876543210" @?= [Token Numeric "0123456789876543210"]
+parseInt = parse "0123456789876543210" @?= Number 123456789876543210
 
-scanOps = scan "- * / + ^ %" @?=
-    [ Token Op "-"
-    , Token Op "*"
-    , Token Op "/"
-    , Token Op "+"
-    , Token Op "^"
-    , Token Op "%"
-    ]
+parseOps = parse "1 - 1" @?= OpExpr "-" (Number 1) (Number 1)
 
-scanDec = scan "0.9 .8" @?=
-    [ Token Numeric "0.9"
-    , Token Numeric ".8" ]
+parseDec = parse "0.9 + .8" @?= OpExpr "+" (Number 0.9) (Number 0.8)
 
-scanExp = scan "9e10 9e-10" @?=
-    [ Token Numeric "9e10"
-    , Token Numeric "9e-10"
-    ]
+parseExp = parse "9e10 / 9e-10" @?= OpExpr "/" (Number 9e10) (Number 9e-10)
 
-scanDecExp = scan "2.3e2" @?= [Token Numeric "2.3e2"]
+parseDecExp = parse "2.3e2" @?= Number 2.3e2
 
-scanId = scan "thisisateststring abc123" @?=
-    [ Token Id "thisisateststring"
-    , Token Id "abc123"
-    ]
+parseId = parse "thisisateststring * abc123" @?= OpExpr "*" (Var "thisisateststring") (Var "abc123")
 
-scanBrack = scan "()" @?=
-    [ Token Lparen "("
-    , Token Rparen ")" ]
+parseBrack = parse "(2) * [3]" @?= OpExpr "*" (Number 2) (Number 3)
 
-scanWhitespace = scan "         1         " @?= [Token Numeric "1"]
+parseWhitespace = parse "         1         " @?= Number 1
 
-scanFuncs = scan "sin cos tan asin acos atan" @?=
-    [ Token Function "sin"
-    , Token Function "cos"
-    , Token Function "tan"
-    , Token Function "asin"
-    , Token Function "acos"
-    , Token Function "atan"
-    ]
+parseFuncs = parse "sin(1)" @?= Function "sin" (Number 1)
 
-scanEqls = scan "=" @?= [Token Eql "="]
+parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number 1)
 
-scanIntId = assertException (evaluate $ scan "123abc")
+parseNeg = parse "1 / -2" @?= OpExpr "/" (Number 1) (Neg (Number 2))
 
-scanDecId = assertException (evaluate $ scan "1.23abc")
+parseIntId = assertException (evaluate $ parse "123abc")
 
-scanExpId = assertException (evaluate $ scan "12e3abc")
+parseDecId = assertException (evaluate $ parse "1.23abc")
 
-scanExpId2 = assertException (evaluate $ scan "12eabc")
+parseExpId = assertException (evaluate $ parse "12e3abc")
 
-scanIdDec = assertException (evaluate $ scan "abc.234")
+parseExpId2 = assertException (evaluate $ parse "12eabc")
 
-scanDecDec = assertException (evaluate $ scan "12.34.56")
+parseIdDec = assertException (evaluate $ parse "abc.234")
 
-scanExpDec = assertException (evaluate $ scan "12e3.4")
+parseDecDec = assertException (evaluate $ parse "12.34.56")
 
-scanExpExp = assertException (evaluate $ scan "12e42e9")
+parseExpDec = assertException (evaluate $ parse "12e3.4")
 
-scanUnfinExp = assertException (evaluate $ scan "123e")
+parseExpExp = assertException (evaluate $ parse "12e42e9")
 
-scanBig = scan "c=(8*9e10+(7.289 / 3) % x -10)" @?=
-    [ Token Id "c"
-    , Token Eql "="
-    , Token Lparen "("
-    , Token Numeric "8"
-    , Token Op "*"
-    , Token Numeric "9e10"
-    , Token Op "+"
-    , Token Lparen "("
-    , Token Numeric "7.289"
-    , Token Op "/"
-    , Token Numeric "3"
-    , Token Rparen ")"
-    , Token Op "%"
-    , Token Id "x"
-    , Token Op "-"
-    , Token Numeric "10"
-    , Token Rparen ")"
-    ]
+parseUnfinExp = assertException (evaluate $ parse "123e")
 
-scanAddNeg = scan "2 + -3" @?=
-    [ Token Numeric "2"
-    , Token Op "+"
-    , Token Op "-"
-    , Token Numeric "3"
-    ]
+parseDoubleTerm = assertException (evaluate $ parse "12 34")
+
+parseEqlNum = assertException (evaluate $ parse "1 = 2")
+
+parseBig = parse "c=(8*9e10+(7.289 / 3) % x -10)" @?=
+    EqlStmt (Var "c")
+            (OpExpr "%" (OpExpr "+" (OpExpr "*" (Number 8)
+                                                (Number 9e10))
+                                    (OpExpr "/" (Number 7.289)
+                                                (Number 3)))
+                        (OpExpr "-" (Var "x")
+                                    (Number 10)))
