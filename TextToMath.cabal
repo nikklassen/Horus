@@ -23,7 +23,7 @@ library
 
     GHC-Options: -O2 -Wall
     exposed-modules: Calculator,
-                     Calculator.Lexer,
+                     Calculator.Parser,
                      Calculator.Functions,
                      Calculator.Data.AST
 

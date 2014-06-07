@@ -1,4 +1,4 @@
-module Calculator.Lexer (
+module Calculator.Parser (
     parse
 ) where
 

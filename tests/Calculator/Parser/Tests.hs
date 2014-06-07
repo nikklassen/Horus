@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Calculator.Parser.Tests (
     tests
 ) where
@@ -5,126 +7,107 @@ module Calculator.Parser.Tests (
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 import Test.HUnit
-import Control.Exception(ErrorCall(..), evaluate)
-import Calculator.Lexer
-import Test.HUnit.Tools
+import Control.Exception (ErrorCall(..), evaluate, catch)
+import Calculator.Data.AST
+import Calculator.Parser
 
-tests = []
+assertException :: IO AST -> Assertion
+assertException action =
+    (do
+        result <- action
+        assertFailure $ "Expected exception, got " ++ (show result))
+    `Control.Exception.catch` \ (_ :: ErrorCall) -> assertBool "" True
 
-{--
-tests = [ testGroup "Fix Negatives" [
-            testCase "Minus sign" fix_minus,
-            testCase "Op & neg num" fix_op_neg,
-            testCase "BOL neg num" fix_bol_neg,
-            testCase "Neg num in brackets" fix_lparen_neg
+tests = [ testGroup "Simple" [
+            testCase "Int" parseInt,
+            testCase "Operators" parseOps,
+            testCase "Decimal" parseDec,
+            testCase "Exp" parseExp,
+            testCase "Decimal with Exp" parseDecExp,
+            testCase "Id" parseId,
+            testCase "Brackets" parseBrack,
+            testCase "Whitespace" parseWhitespace,
+            testCase "Functions" parseFuncs,
+            testCase "Equals sign" parseEqls,
+            testCase "Negative" parseNeg
             ]
-        , testGroup "Parse" [
-            testCase "Simple op, same precedence" parse_op_same_precedence,
-            testCase "Simple mixed precedence" parse_mixed_precedence,
-            testCase "Brackets w mixed precedence" parse_brackets_mixed,
-            testCase "All operators" parse_big
+        , testGroup "Simple - Errors" [
+            testCase "Int-Id" parseIntId,
+            testCase "Dec-Id" parseDecId,
+            testCase "Exp-Id" parseExpId,
+            testCase "Exp-Id 2" parseExpId2,
+            testCase "Id-Decimal" parseIdDec,
+            testCase "Double decimal" parseDecDec,
+            testCase "Exp with decimal" parseExpDec,
+            testCase "Exp-Exp" parseExpExp,
+            testCase "Unfinished exp" parseUnfinExp,
+            testCase "Double term" parseDoubleTerm,
+            testCase "Equals number" parseEqlNum,
+            testCase "Mismatched parens" parseMismatchParen,
+            testCase "Missing paren" parseMissingParen,
+            testCase "Equality, missing left" parseEqlMissingLeft, 
+            testCase "Equality, missing right" parseEqlMissingRight
             ]
-        , testGroup "Parse Errors" [
-            testCase "Missing left bracket" parse_missing_left,
-            testCase "Missing right bracket" parse_missing_right
-            ]
-        , testGroup "Get Equation" [
-            testCase "No equals sign" equation_no_eqls,
-            testCase "Full equation" equation_lhs_and_rhs,
-            testCase "Error: No LHS" equation_no_lhs
-            ]
+        , testCase "Big" parseBig
         ]
 
-fix_minus =
-    let tokens = [ Token Numeric "1" , Token Op "-" , Token Numeric "1" ]
-    in fixNegs tokens @?= tokens
+parseInt = parse "0123456789876543210" @?= Number 123456789876543210
 
-fix_bol_neg = fixNegs [ Token Op "-", Token Numeric "1" ] @?=
-    [ Token Function "neg"
-    , Token Numeric "1" ]
+parseOps = parse "1 - 1" @?= OpExpr "-" (Number 1) (Number 1)
 
-fix_op_neg = fixNegs [ Token Numeric "1", Token Op "+", Token Op "-", Token Numeric "1" ] @?=
-    [ Token Numeric "1"
-    , Token Op "+"
-    , Token Function "neg"
-    , Token Numeric "1" ]
+parseDec = parse "0.9 + .8" @?= OpExpr "+" (Number 0.9) (Number 0.8)
 
-fix_lparen_neg = fixNegs [ Token Lparen "(", Token Op "-", Token Numeric "1" ] @?=
-    [ Token Lparen "("
-    , Token Function "neg"
-    , Token Numeric "1" ]
+parseExp = parse "9e10 / 9e-10" @?= OpExpr "/" (Number 9e10) (Number 9e-10)
 
-parse_op_same_precedence = parse [ Token Numeric "1", Token Op "+", Token Numeric "2", Token Op "-", Token Numeric "3" ] @?=
-    [ Token Numeric "1"
-    , Token Numeric "2"
-    , Token Op "+"
-    , Token Numeric "3"
-    , Token Op "-" ]
+parseDecExp = parse "2.3e2" @?= Number 2.3e2
 
-parse_mixed_precedence = parse [ Token Numeric "1", Token Op "+", Token Numeric "2", Token Op "*", Token Numeric "3" ] @?=
-    [ Token Numeric "1"
-    , Token Numeric "2"
-    , Token Numeric "3"
-    , Token Op "*"
-    , Token Op "+" ]
+parseId = parse "thisisateststring * abc123" @?= OpExpr "*" (Var "thisisateststring") (Var "abc123")
 
-parse_brackets_mixed = parse [ Token Lparen "(", Token Numeric "1", Token Op "+", Token Numeric "2", Token Rparen ")", Token Op "*", Token Numeric "3" ] @?=
-    [ Token Numeric "1"
-    , Token Numeric "2"
-    , Token Op "+"
-    , Token Numeric "3"
-    , Token Op "*" ]
+parseBrack = parse "(2) * [3]" @?= OpExpr "*" (Number 2) (Number 3)
 
-parse_missing_left = assertRaises "" (ErrorCall "ERROR: mismatched brackets") (evaluate $ parse [ Token Numeric "1", Token Rparen ")" ])
+parseWhitespace = parse "         1         " @?= Number 1
 
-parse_missing_right = assertRaises "" (ErrorCall "ERROR: mismatched brackets") (evaluate $ parse [ Token Lparen "(", Token Numeric "1" ])
+parseFuncs = parse "sin(1)" @?= Function "sin" (Number 1)
 
-parse_big = parse [Token Lparen "(", Token Numeric "2", Token Op "+", Token Numeric "3", Token Rparen ")", Token Op "/", Token Numeric "5", Token Op "^", Token Function "neg", Token Numeric "6", Token Op "*", Token Numeric "4", Token Op "%", Token Numeric "2", Token Op "-", Token Numeric "4"] @?=
-    [ Token Numeric "2"
-    , Token Numeric "3"
-    , Token Op "+"
-    , Token Numeric "5"
-    , Token Numeric "6"
-    , Token Function "neg"
-    , Token Op "^"
-    , Token Op "/"
-    , Token Numeric "4"
-    , Token Op "*"
-    , Token Numeric "2"
-    , Token Numeric "4"
-    , Token Op "-"
-    , Token Op "%"
-    ]
+parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number 1)
 
-equation_no_eqls = getEquation
-    [ Token Numeric "1"
-    , Token Op "+"
-    , Token Numeric "2"
-    ] @?=
-        ( []
-        , [ Token Numeric "1"
-          , Token Op "+"
-          , Token Numeric "2"
-          ]
-        )
+parseNeg = parse "1 / -2" @?= OpExpr "/" (Number 1) (Neg (Number 2))
 
-equation_no_lhs = assertRaises "" (ErrorCall "ERROR: Expected lhs") $ evaluate $ getEquation
-    [ Token Eql "="
-    , Token Numeric "1"
-    , Token Op "+"
-    , Token Numeric "2"
-    ]
+parseIntId = assertException (evaluate $ parse "123abc")
 
-equation_lhs_and_rhs = getEquation [ Token Id "a"
-    , Token Eql "="
-    , Token Numeric "1"
-    , Token Op "+"
-    , Token Numeric "2"
-    ] @?=
-        ( [ Token Id "a" ]
-        , [ Token Numeric "1"
-          , Token Op "+"
-          , Token Numeric "2"
-          ]
-        )
---}
+parseDecId = assertException (evaluate $ parse "1.23abc")
+
+parseExpId = assertException (evaluate $ parse "12e3abc")
+
+parseExpId2 = assertException (evaluate $ parse "12eabc")
+
+parseIdDec = assertException (evaluate $ parse "abc.234")
+
+parseDecDec = assertException (evaluate $ parse "12.34.56")
+
+parseExpDec = assertException (evaluate $ parse "12e3.4")
+
+parseExpExp = assertException (evaluate $ parse "12e42e9")
+
+parseUnfinExp = assertException (evaluate $ parse "123e")
+
+parseDoubleTerm = assertException (evaluate $ parse "12 34")
+
+parseEqlNum = assertException (evaluate $ parse "1 = 2")
+
+parseEqlMissingLeft = assertException (evaluate $ parse "a =")
+
+parseEqlMissingRight = assertException (evaluate $ parse "= a")
+
+parseMismatchParen = assertException (evaluate $ parse "(((2))]")
+
+parseMissingParen = assertException (evaluate $ parse "(((2))")
+
+parseBig = parse "c=(8*9e10+(7.289 / 3) % x -10)" @?=
+    EqlStmt (Var "c")
+            (OpExpr "%" (OpExpr "+" (OpExpr "*" (Number 8)
+                                                (Number 9e10))
+                                    (OpExpr "/" (Number 7.289)
+                                                (Number 3)))
+                        (OpExpr "-" (Var "x")
+                                    (Number 10)))

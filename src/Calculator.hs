@@ -1,6 +1,6 @@
 module Calculator where
 
-import qualified Calculator.Lexer as L
+import qualified Calculator.Parser as P
 import Data.Number.CReal
 import Data.Map (Map)
 import qualified Data.Map as Map
