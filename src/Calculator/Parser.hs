@@ -2,42 +2,19 @@ module Calculator.Parser (
     parse
 ) where
 
-import Text.Parsec.Char
-import Text.Parsec.Prim (many, (<?>), (<|>), try)
+import Text.Parsec.Char(char, spaces, space)
+import Text.Parsec.Prim ((<?>), (<|>), try)
 import qualified Text.Parsec.Prim as Parsec (parse)
-import Text.Parsec.Combinator (many1, option, choice, eof)
-import Text.Parsec.String
-import Control.Applicative ((<$>), (<*>), (*>), (<*))
+import Text.Parsec.Combinator (many1, choice, eof)
+import Text.Parsec.String (Parser)
+import Control.Applicative ((<$>), (*>), (<*))
 import Text.Parsec.Expr
 
 import Calculator.Data.AST (AST(..))
 import qualified Calculator.Data.AST as AST
 import Calculator.Functions
+import Calculator.Parser.Helpers
 
-(<:>) a b = (:) <$> a <*> b
-(<++>) a b = (++) <$> a <*> b
-
--- Helper Parsers
-number :: Parser String
-number = many1 digit
-
-power :: Parser String
-power = option "" $ oneOf "eE" <:> signed
-        where signed = (option "" (string "-")) <++> number
-
-decimal :: Parser String
-decimal = (char '.' <:> number) <++> (option "" power)
-
-float :: Parser String
-float = number <++> (option "" decimal) <++> (option "" power)
-
-identifier :: Parser String
-identifier = do
-    h <- letter
-    e <- many alphaNum
-    return $ h:e
-
--- Grammar
 numeric :: Parser AST
 numeric = AST.toNumber <$> choice [decimal, float]
 

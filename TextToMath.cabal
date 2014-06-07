@@ -21,11 +21,12 @@ library
                    containers,
                    parsec
 
-    GHC-Options: -O2 -Wall
+    GHC-Options: -O2 -Wall -fno-warn-missing-signatures
     exposed-modules: Calculator,
                      Calculator.Parser,
                      Calculator.Functions,
                      Calculator.Data.AST
+    other-modules: Calculator.Parser.Helpers
 
 executable TextToMath
     hs-source-dirs: textToMath-web
