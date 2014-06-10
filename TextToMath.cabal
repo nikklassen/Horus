@@ -19,13 +19,15 @@ library
     build-depends: base,
                    numbers,
                    containers,
-                   parsec
+                   parsec,
+                   mtl
 
     GHC-Options: -O2 -Wall -fno-warn-missing-signatures
     exposed-modules: Calculator,
                      Calculator.Parser,
                      Calculator.Functions,
-                     Calculator.Data.AST
+                     Calculator.Data.AST,
+                     Calculator.Evaluator
     other-modules: Calculator.Parser.Helpers
 
 executable TextToMath
@@ -55,4 +57,5 @@ test-suite Tests
                    HUnit >=1.2,
                    containers >= 0.4.2.1,
                    deepseq >=1.2 && <1.4,
-                   numbers
+                   numbers,
+                   mtl

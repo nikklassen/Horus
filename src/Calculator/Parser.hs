@@ -10,13 +10,12 @@ import Text.Parsec.String (Parser)
 import Control.Applicative ((<$>), (*>), (<*))
 import Text.Parsec.Expr
 
-import Calculator.Data.AST (AST(..))
-import qualified Calculator.Data.AST as AST
+import Calculator.Data.AST
 import Calculator.Functions
 import Calculator.Parser.Helpers
 
 numeric :: Parser AST
-numeric = AST.toNumber <$> choice [decimal, float]
+numeric = Number <$> choice [decimal, float]
 
 varOrFunction :: Parser AST
 varOrFunction = do
