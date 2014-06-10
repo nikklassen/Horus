@@ -19,26 +19,28 @@ library
     build-depends: base,
                    numbers,
                    containers,
-                   parsec
+                   parsec,
+                   mtl
 
-    GHC-Options: -O2 -Wall
+    GHC-Options: -O2 -Wall -fno-warn-missing-signatures
     exposed-modules: Calculator,
                      Calculator.Parser,
-                     Calculator.Lexer,
                      Calculator.Functions,
-                     Calculator.Data.Token
+                     Calculator.Data.AST,
+                     Calculator.Evaluator
+    other-modules: Calculator.Parser.Helpers
 
 executable TextToMath
     hs-source-dirs: textToMath-web
     main-is: TextToMath.hs
     build-depends: base,
                    TextToMath,
-                   blaze-html ==0.6.*,
-                   blaze-markup ==0.5.*,
-                   text ==0.11.*,
-                   happstack-lite ==7.3.*,
-                   lifted-base ==0.2.*,
-                   transformers ==0.3.*,
+                   blaze-html,
+                   blaze-markup,
+                   text,
+                   happstack-lite >=7.3,
+                   lifted-base >=0.2,
+                   transformers >=0.3,
                    numbers,
                    containers >= 0.4.2.1,
                    json
@@ -50,9 +52,10 @@ test-suite Tests
     build-depends: base,
                    TextToMath,
                    testpack,
-                   test-framework ==0.8.*,
-                   test-framework-hunit ==0.3.*,
-                   HUnit ==1.2.*,
+                   test-framework >=0.8,
+                   test-framework-hunit >=0.3,
+                   HUnit >=1.2,
                    containers >= 0.4.2.1,
                    deepseq >=1.2 && <1.4,
-                   numbers
+                   numbers,
+                   mtl

@@ -1,76 +1,73 @@
-module Calculator.Parser(
-    fixNegs,
-    parse,
-    getEquation
+module Calculator.Parser (
+    parse
 ) where
 
-import Calculator.Data.Token
-import Data.Maybe
+import Text.Parsec.Char(char, spaces, space)
+import Text.Parsec.Prim ((<?>), (<|>), try)
+import qualified Text.Parsec.Prim as Parsec (parse)
+import Text.Parsec.Combinator (many1, choice, eof)
+import Text.Parsec.String (Parser)
+import Control.Applicative ((<$>), (*>), (<*))
+import Text.Parsec.Expr
 
-fixNegs :: [Token] -> [Token]
-fixNegs tokens = fixNegsAcc tokens [] Nothing
+import Calculator.Data.AST
+import Calculator.Functions
+import Calculator.Parser.Helpers
 
-fixNegsAcc :: [Token] -> [Token] -> Maybe Token -> [Token]
-fixNegsAcc [] acc _ = reverse acc
-fixNegsAcc (t:ts) acc prev
-    | isNothing prev =
-        if getKind t == Op && getLex t == "-" then
-            fixNegsAcc ts (negToken:acc) $ Just negToken
+numeric :: Parser AST
+numeric = Number <$> choice [decimal, float]
+
+varOrFunction :: Parser AST
+varOrFunction = do
+    f <- identifier
+    if isFunction f then
+        do
+            _ <- char '(' 
+            e <- expr
+            _ <- char ')'
+            return $ Function f e
         else
-            fixNegsAcc ts (t:acc) $ Just t
-    | otherwise =
-        if (getKind t == Op && getLex t == "-") && (prevKind `elem` [Function, Op, Lparen]) then
-              fixNegsAcc ts (negToken:acc) $ Just negToken
-        else
-            fixNegsAcc ts (t:acc) $ Just t
-   where prevKind = getKind $ fromJust prev
-         negToken = Token Function "neg"        
+            return $ Var f
 
-parse :: [Token] -> [Token]
-parse tokens = parseAcc tokens [] []
+statement :: Parser AST
+statement = (try (do
+                i <- identifier
+                spaces
+                _ <- char '='
+                spaces
+                e <- expr
+                return $ EqlStmt (Var i) e)
+            <|> expr) <* eof
+            <?> "expr"
 
-parseAcc :: [Token] -> [Token] -> [Token] -> [Token]
-parseAcc [] output [] = reverse output
-parseAcc [] output (op:ops)
-    | getKind op == Lparen = error "ERROR: mismatched brackets"
-    | otherwise = parseAcc [] (op:output) ops
-parseAcc tokens@(t:ts) output opStack
-    | kind `elem` [Numeric, Id] = parseAcc ts (t:output) opStack
-    | kind `elem` [Op, Function] =
-        if null opStack || getKind (head opStack) == Lparen || precedence t > precedence (head opStack) then
-            parseAcc ts output $ t:opStack
-        else
-            parseAcc tokens (head opStack : output) $ tail opStack
-    | kind == Lparen = parseAcc ts output (t:opStack)
-    | kind == Rparen =
-        if null opStack then
-            error "ERROR: mismatched brackets"
-        else
-            let op = head opStack
-            in if getKind op == Lparen then
-                parseAcc ts output $ tail opStack
-            else
-                parseAcc tokens (op:output) $ tail opStack
-    where kind = getKind t
+expr :: Parser AST
+expr = buildExpressionParser operators term
 
-getEquation :: [Token] -> ([Token], [Token])
-getEquation tokens =
-    let (lhs, rhs) = break (\t -> getKind t == Eql) tokens
-    in if null rhs then
-        -- With no equals sign, put everything in the "rhs"
-        (rhs, lhs)
-    else if null lhs then
-        error "ERROR: Expected lhs"
-    else
-        -- Don't return the equals sign
-        (lhs, drop 1 rhs)
+operators = [ [ binary '^' (OpExpr "^") AssocRight ]
+            , [ binary '*' (OpExpr "*") AssocLeft
+              , binary '/' (OpExpr "/") AssocLeft
+              ]
+            , [ binary '+' (OpExpr "+") AssocLeft
+              , binary '-' (OpExpr "-") AssocLeft
+              ]
+            , [ binary '%' (OpExpr "%") AssocLeft ]
+            ]
+            where binary op func assoc = Infix (char op >> return func) assoc
 
-precedence :: Token -> Int
-precedence t = case getLex t of
-    "%" -> 0
-    "+" -> 1
-    "-" -> 1
-    "*" -> 2
-    "/" -> 2
-    "^" -> 3
-    _ -> 4 -- functions
+term :: Parser AST
+term = do
+    t <- ((many1 space >> term)
+         <|> (char '-' >> Neg <$> term)
+         <|> enclosed '(' expr ')'
+         <|> enclosed '[' expr ']'
+         <|> varOrFunction
+         <|> numeric
+         <?> "term")
+    spaces
+    return t
+    where enclosed c1 e c2 = char c1 *> e <* char c2
+
+parse :: String -> AST
+parse s = case Parsec.parse statement "" s of
+            Left err -> error $ "ERROR: " ++ (show err)
+            Right ts -> ts
