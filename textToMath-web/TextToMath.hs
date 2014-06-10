@@ -5,7 +5,7 @@ import Data.Text (Text)
 import Data.Text.Lazy (unpack)
 import Happstack.Lite
 import Text.JSON.Generic hiding (Result)
-import Text.Blaze.Html5 (Html, (!), p, toHtml, h1, button, label, table, tr, th, tbody, thead)
+import Text.Blaze.Html5 (Html, (!), p, toHtml, button, label, table, tr, th, tbody, thead)
 import Text.Blaze.Html5.Attributes (href, class_, type_, action, name)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -20,7 +20,7 @@ import Data.Maybe (fromMaybe)
 import Data.Number.CReal
 import Calculator
 
-config = Just ServerConfig { port      = 80
+config = Just ServerConfig { port      = 3000
                            , ramQuota  = 1000000
                            , diskQuota = 20000000
                            , tmpDir    = "/tmp/"
@@ -31,8 +31,7 @@ main = serve config myApp
 
 myApp :: ServerPart Response
 myApp = msum
-  [ dir "resources" $ serveDirectory DisableBrowsing [] "resources"
-  , dir "calculate" calcPage
+  [ dir "calculate" calcPage
   , homePage
   ]
 
@@ -41,7 +40,7 @@ template title body = toResponse $
   H.html $ do
     H.head $ do
       H.title (toHtml title)
-      H.link ! A.rel "stylesheet" ! href "/resources/css/bootstrap.min.css"
+      H.link ! A.rel "stylesheet" ! href "/css/bootstrap.min.css"
       H.script ! A.src  "//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" $ return ()
     H.body $ do
       header
@@ -54,10 +53,9 @@ template title body = toResponse $
 homePage :: ServerPart Response
 homePage =
     ok $ template "TextToMath" $ do
-        H.script ! A.src "resources/js/homepage.js" $ return ()
-        H.script ! A.src "resources/lib/jquery.cookie.js" $ return ()
-        H.link ! A.rel "stylesheet" ! href "/resources/css/homepage.css"
-        -- h1 "Hello!"
+        H.script ! A.src "/js/homepage.js" $ return ()
+        H.script ! A.src "/js/lib/jquery.cookie.js" $ return ()
+        H.link ! A.rel "stylesheet" ! href "/css/homepage.css"
         H.div ! A.style "float: left; width: 80%" $
             H.div ! A.style "margin: 0 auto; width: 90%" $ do
                 H.form ! action "/calculate" ! A.id "math-form" ! A.method "POST" $ do
