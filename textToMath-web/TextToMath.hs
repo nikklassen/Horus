@@ -81,8 +81,8 @@ homePage =
             table ! A.style "margin: 0 auto" ! class_ "table table-bordered" $ do
                 thead $
                     tr $ do
-                        th $ "Name"
-                        th $ "Value"
+                        th "Name"
+                        th "Value"
                 tbody ! A.id "vars" $ return ()
             button ! A.style "margin-top: 5px" ! A.id "reset-vars" ! class_ "btn btn-danger" $ "Reset"
 
@@ -95,16 +95,18 @@ calcPage acid =
         variables <- query' acid (UserState.GetUserVars $ fromMaybe "" userId)
         result <- liftIO $ getReturnText (unpack input) $ Map.map read variables
         case result of
-            Left errMsg -> do setResponseCode 422
-                              internalServerError $ toResponse errMsg
-            Right ans -> do uuidValue <- liftIO uuid
-                            update' acid (UserState.SetUserVars (show uuidValue) $ Map.map show $ vars ans)
-                            addCookies [(Session, mkCookie "vars" $ serializeVars $ vars ans )]
-                            addCookies [(Session, mkCookie "user-id" $ show uuidValue)]
-                            ok $ toResponse $
-                                case answer ans of
-                                    Nothing -> "0"
-                                    Just a -> show a
+            Left errMsg -> do
+                setResponseCode 422
+                internalServerError $ toResponse errMsg
+            Right ans -> do
+                uuidValue <- liftIO uuid
+                update' acid (UserState.SetUserVars (show uuidValue) $ Map.map show $ vars ans)
+                addCookies [(Session, mkCookie "vars" $ serializeVars $ vars ans )]
+                addCookies [(Session, mkCookie "user-id" $ show uuidValue)]
+                ok $ toResponse $
+                    case answer ans of
+                        Nothing -> "0"
+                        Just a -> show a
 
 getReturnText :: String -> Map String CReal -> IO (Either String Result)
 getReturnText input variables = CEL.catch result

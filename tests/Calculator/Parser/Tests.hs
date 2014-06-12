@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Calculator.Parser.Tests (
@@ -15,7 +16,7 @@ assertException :: IO AST -> Assertion
 assertException action =
     (do
         result <- action
-        assertFailure $ "Expected exception, got " ++ (show result))
+        assertFailure $ "Expected exception, got " ++ show result)
     `Control.Exception.catch` \ (_ :: ErrorCall) -> assertBool "" True
 
 tests = [ testGroup "Simple" [

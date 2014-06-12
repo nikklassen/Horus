@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module Calculator.Evaluator.Tests (
     tests
 ) where
@@ -29,6 +31,7 @@ tests = [ testGroup "Simple"
             ]
         , testGroup "Error"
             [ testCase "Undefined var" errorVar
+            , testCase "Undefined function" errorFunc
             ]
         ]
 
@@ -36,7 +39,7 @@ process :: AST -> CReal
 process ast = evalState (eval ast) (Map.fromList [])
 
 processVars :: AST -> Map String CReal -> (CReal, Map String CReal)
-processVars ast vars = runState (eval ast) vars
+processVars ast = runState (eval ast)
 
 int = process (Number "0123456789876543210") @?= 123456789876543210
 

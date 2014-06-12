@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module Calculator.Parser (
     parse
 ) where
@@ -52,22 +54,22 @@ operators = [ [ binary '^' (OpExpr "^") AssocRight ]
               ]
             , [ binary '%' (OpExpr "%") AssocLeft ]
             ]
-            where binary op func assoc = Infix (char op >> return func) assoc
+            where binary op func = Infix (char op >> return func)
 
 term :: Parser AST
 term = do
-    t <- ((many1 space >> term)
+    t <- (many1 space >> term)
          <|> (char '-' >> Neg <$> term)
          <|> enclosed '(' expr ')'
          <|> enclosed '[' expr ']'
          <|> varOrFunction
          <|> numeric
-         <?> "term")
+         <?> "term"
     spaces
     return t
     where enclosed c1 e c2 = char c1 *> e <* char c2
 
 parse :: String -> AST
 parse s = case Parsec.parse statement "" s of
-            Left err -> error $ "ERROR: " ++ (show err)
+            Left err -> error $ "ERROR: " ++ show err
             Right ts -> ts

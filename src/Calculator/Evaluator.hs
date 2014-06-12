@@ -21,7 +21,7 @@ eval (Var var) = do
         Just val -> return val
         Nothing -> error $ "Use of undefined variable \"" ++ var ++ "\""
 
-eval (Neg e) = eval e >>= return . negate
+eval (Neg e) = liftM negate $ eval e
 
 eval (OpExpr op leftExpr rightExpr) = do
     leftVal <- eval leftExpr
@@ -29,7 +29,7 @@ eval (OpExpr op leftExpr rightExpr) = do
     return $ operate op leftVal rightVal
 
 eval (Function func e) = case getFunction func of
-    Just f -> eval e >>= return . f
+    Just f -> liftM f $ eval e
     Nothing -> error $ "Use of undefined function \"" ++ func ++ "\""
 
 eval (EqlStmt (Var var) e) = do
@@ -60,4 +60,4 @@ operate op n1 n2 =
         "^" -> n1 ** n2
         "%" -> realMod n1 n2
         o -> error $ "Unimplemented operator " ++ o
-    where realMod a b = a - (fromInteger $ floor $ a/b) * b
+    where realMod a b = a - fromInteger (floor $ a/b) * b
