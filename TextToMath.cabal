@@ -32,18 +32,24 @@ library
 
 executable TextToMath
     hs-source-dirs: textToMath-web
+    GHC-Options: -O2 -Wall -fno-warn-missing-signatures
     main-is: TextToMath.hs
+    other-modules: UserState
     build-depends: base,
                    TextToMath,
                    blaze-html,
                    blaze-markup,
                    text,
-                   happstack-lite >=7.3,
+                   happstack-server,
                    lifted-base >=0.2,
                    transformers >=0.3,
                    numbers,
                    containers >= 0.4.2.1,
-                   json
+                   json,
+                   acid-state,
+                   safecopy,
+                   mtl,
+                   system-uuid
 
 test-suite Tests
     type: exitcode-stdio-1.0

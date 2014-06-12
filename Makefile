@@ -13,4 +13,5 @@ server: all
 
 clean:
 		rm -f TextToMath.tix
+		sudo rm -rf state
 		cabal clean

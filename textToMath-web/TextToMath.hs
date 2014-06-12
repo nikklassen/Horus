@@ -3,35 +3,48 @@
 module Main where
 import Data.Text (Text)
 import Data.Text.Lazy (unpack)
-import Happstack.Lite
+import Happstack.Server hiding (body, result)
 import Text.JSON.Generic hiding (Result)
 import Text.Blaze.Html5 (Html, (!), p, toHtml, button, label, table, tr, th, tbody, thead)
 import Text.Blaze.Html5.Attributes (href, class_, type_, action, name)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Snippets
-import Control.Exception (evaluate, ErrorCall)
+import Control.Exception (evaluate, ErrorCall, bracket)
 import Control.Applicative (optional)
 import qualified Control.Exception.Lifted as CEL
 import Debug.Trace (trace)
 import Control.Monad.IO.Class (liftIO)
-import Data.Map (fromList, Map, map, toList)
+import Data.Map (Map)
+import qualified Data.Map as Map (map, toList)
 import Data.Maybe (fromMaybe)
 import Data.Number.CReal
 import Calculator
+import UserState
+import Data.Acid (AcidState)
+import Data.Acid.Local
+import Data.Acid.Advanced (query', update')
+import Control.Monad (msum)
+import System.UUID.V4 (uuid)
 
-config = Just ServerConfig { port      = 3000
-                           , ramQuota  = 1000000
-                           , diskQuota = 20000000
-                           , tmpDir    = "/tmp/"
-                           }
+config :: Conf
+config = Conf { port        = 3000
+              , validator   = Nothing
+              , logAccess   = Just logMAccess
+              , timeout     = 30
+              , threadGroup = Nothing
+              }
 
 main :: IO ()
-main = serve config myApp
+main = bracket (openLocalState UserState.emptyState)
+               createCheckpointAndClose
+               (\acid -> simpleHTTP config $ do
+                   decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096) 
+                   myApp acid)
 
-myApp :: ServerPart Response
-myApp = msum
-  [ dir "calculate" calcPage
+myApp :: AcidState UserDb -> ServerPart Response
+myApp acid = msum
+  [ dir "calculate" (calcPage acid)
   , homePage
   ]
 
@@ -73,18 +86,21 @@ homePage =
                 tbody ! A.id "vars" $ return ()
             button ! A.style "margin-top: 5px" ! A.id "reset-vars" ! class_ "btn btn-danger" $ "Reset"
 
-calcPage :: ServerPart Response
-calcPage =
+calcPage :: AcidState UserDb -> ServerPart Response
+calcPage acid =
     do
         method POST
         input <- lookText "input"
-        cookieVars <- optional $ lookCookieValue "vars"
-        let variables = parseCookie cookieVars
-        result <- liftIO $ getReturnText (unpack input) variables
+        userId <- optional $ lookCookieValue "user-id"
+        variables <- query' acid (UserState.GetUserVars $ fromMaybe "" userId)
+        result <- liftIO $ getReturnText (unpack input) $ Map.map read variables
         case result of
             Left errMsg -> do setResponseCode 422
                               internalServerError $ toResponse errMsg
-            Right ans -> do addCookies [(Session, mkCookie "vars" $ serializeVars $ vars ans )]
+            Right ans -> do uuidValue <- liftIO uuid
+                            update' acid (UserState.SetUserVars (show uuidValue) $ Map.map show $ vars ans)
+                            addCookies [(Session, mkCookie "vars" $ serializeVars $ vars ans )]
+                            addCookies [(Session, mkCookie "user-id" $ show uuidValue)]
                             ok $ toResponse $
                                 case answer ans of
                                     Nothing -> "0"
@@ -95,9 +111,5 @@ getReturnText input variables = CEL.catch result
                                           (\e -> trace ("Caught error " ++ show (e :: ErrorCall)) $ return $ Left ("Invalid input" :: String))
                                 where result = Control.Exception.evaluate $ Right $ calculate input variables
 
-parseCookie :: Maybe String -> Map String CReal
-parseCookie cookieVars = fromList $ Prelude.map readValues (decodeJSON (fromMaybe "[]" cookieVars) :: [(String, String)])
-                         where readValues = \(k,v) -> (k, read v :: CReal)
-
 serializeVars :: Map String CReal -> String
-serializeVars variables = encodeJSON $ toList $ Data.Map.map show variables
+serializeVars variables = encodeJSON $ Map.toList $ Map.map show variables

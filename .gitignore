@@ -3,6 +3,7 @@ cabal-dev
 tags
 reports
 resources
+state/
 *.o
 *.hi
 *.chi
