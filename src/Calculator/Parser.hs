@@ -7,13 +7,12 @@ module Calculator.Parser (
 import Text.Parsec.Char(char, spaces, space)
 import Text.Parsec.Prim ((<?>), (<|>), try)
 import qualified Text.Parsec.Prim as Parsec (parse)
-import Text.Parsec.Combinator (many1, choice, eof)
+import Text.Parsec.Combinator (many1, choice, eof, sepBy)
 import Text.Parsec.String (Parser)
 import Control.Applicative ((<$>), (*>), (<*))
 import Text.Parsec.Expr
 
 import Calculator.Data.AST
-import Calculator.Functions
 import Calculator.Parser.Helpers
 
 numeric :: Parser AST
@@ -22,14 +21,12 @@ numeric = Number <$> choice [decimal, float]
 varOrFunction :: Parser AST
 varOrFunction = do
     f <- identifier
-    if isFunction f then
-        do
-            _ <- char '(' 
-            e <- expr
-            _ <- char ')'
-            return $ Function f e
-        else
-            return $ Var f
+    try $ do
+        _ <- char '('
+        es <- expr `sepBy` char ','
+        _ <- char ')'
+        return $ FuncExpr f es
+        <|> return (Var f)
 
 statement :: Parser AST
 statement = (try (do

@@ -4,7 +4,7 @@ module Calculator.Data.AST (
 
 data AST = EqlStmt AST AST
            | OpExpr String AST AST
-           | Function String AST
+           | FuncExpr String [AST]
            | Var String
            | Number String
            | Neg AST

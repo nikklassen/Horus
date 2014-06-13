@@ -28,6 +28,7 @@ tests = [ testGroup "Simple" [
             testCase "Brackets" parseBrack,
             testCase "Whitespace" parseWhitespace,
             testCase "Functions" parseFuncs,
+            testCase "Function - multiple params" parseFuncMulti,
             testCase "Equals sign" parseEqls,
             testCase "Negative" parseNeg
             ]
@@ -65,7 +66,9 @@ parseBrack = parse "(2) * [3]" @?= OpExpr "*" (Number "2") (Number "3")
 
 parseWhitespace = parse "         1         " @?= Number "1"
 
-parseFuncs = parse "sin(1)" @?= Function "sin" (Number "1")
+parseFuncs = parse "sin(1)" @?= FuncExpr "sin" [Number "1"]
+
+parseFuncMulti = parse "f( a , 2 )" @?= FuncExpr "f" [Var "a", Number "2"]
 
 parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number "1")
 
