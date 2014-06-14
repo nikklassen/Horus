@@ -2,7 +2,7 @@
 
 module Main where
 import Data.Text (Text)
-import Data.Text.Lazy (unpack)
+import Data.Text.Lazy (unpack, pack, splitOn)
 import Happstack.Server hiding (body, result)
 import Text.JSON.Generic hiding (Result)
 import Text.Blaze.Html5 (Html, (!), p, toHtml, button, label, table, tr, th, tbody, thead)
@@ -16,10 +16,11 @@ import qualified Control.Exception.Lifted as CEL
 import Debug.Trace (trace)
 import Control.Monad.IO.Class (liftIO)
 import Data.Map (Map)
-import qualified Data.Map as Map (map, toList)
+import qualified Data.Map as Map (map, toList, assocs)
 import Data.Maybe (fromMaybe)
 import Data.Number.CReal
 import Calculator
+import Calculator.Functions (Function(..))
 import UserState
 import Data.Acid (AcidState)
 import Data.Acid.Local
@@ -49,7 +50,7 @@ myApp acid = msum
   ]
 
 template :: Text -> Html -> Response
-template title body = toResponse $
+template title htmlBody = toResponse $
   H.html $ do
     H.head $ do
       H.title (toHtml title)
@@ -59,7 +60,7 @@ template title body = toResponse $
       header
       H.div ! class_ "container" $
         H.div ! class_ "starter-template" $
-          body
+          htmlBody
       H.footer $
         p "Created by Nik Klassen"
 
@@ -92,26 +93,35 @@ calcPage acid =
         method POST
         input <- lookText "input"
         userId <- optional $ lookCookieValue "user-id"
-        variables <- query' acid (UserState.GetUserVars $ fromMaybe "" userId)
-        result <- liftIO $ getReturnText (unpack input) $ Map.map read variables
+        User variables functions <- query' acid (UserState.GetUser $ fromMaybe "" userId)
+        result <- liftIO $ getReturnText (unpack input) (Map.map read variables) functions
         case result of
             Left errMsg -> do
                 setResponseCode 422
                 internalServerError $ toResponse errMsg
             Right ans -> do
                 uuidValue <- liftIO uuid
-                update' acid (UserState.SetUserVars (show uuidValue) $ Map.map show $ vars ans)
-                addCookies [(Session, mkCookie "vars" $ serializeVars $ vars ans )]
+                let newVars = vars ans
+                let newFuncs = funcs ans
+                update' acid (UserState.SetUser (show uuidValue) $ User (Map.map show newVars) newFuncs)
+                addCookies [(Session, mkCookie "vars" $ serializeVars newVars)]
+                addCookies [(Session, mkCookie "funcs" $ serializeFuncs newFuncs)]
                 addCookies [(Session, mkCookie "user-id" $ show uuidValue)]
                 ok $ toResponse $
                     case answer ans of
                         Nothing -> "0"
                         Just a -> show a
 
-getReturnText :: String -> Map String CReal -> IO (Either String Result)
-getReturnText input variables = CEL.catch result
-                                          (\e -> trace ("Caught error " ++ show (e :: ErrorCall)) $ return $ Left ("Invalid input" :: String))
-                                where result = Control.Exception.evaluate $ Right $ calculate input variables
+getReturnText :: String -> Map String CReal -> Map String Function -> IO (Either String Result)
+getReturnText input variables functions = CEL.catch result
+                                                    (\e -> trace ("Caught error " ++ show (e :: ErrorCall)) $ return $ Left ("Invalid input" :: String))
+                                                    where result = Control.Exception.evaluate $ Right $ calculate input variables functions
 
 serializeVars :: Map String CReal -> String
 serializeVars variables = encodeJSON $ Map.toList $ Map.map show variables
+
+serializeFuncs :: Map String Function -> String
+serializeFuncs functions = encodeJSON $ map split $ Map.assocs functions
+                           where split :: (String, Function) -> (String, String)
+                                 split (k, v) = let [lhs, rhs] = splitOn " = " $ pack $ k ++ show v
+                                                in (unpack lhs, unpack rhs)

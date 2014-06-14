@@ -30,12 +30,12 @@ varOrFunction = do
 
 statement :: Parser AST
 statement = (try (do
-                i <- identifier
+                lhs <- varOrFunction
                 spaces
                 _ <- char '='
                 spaces
-                e <- expr
-                return $ EqlStmt (Var i) e)
+                rhs <- expr
+                return $ EqlStmt lhs rhs)
             <|> expr) <* eof
             <?> "expr"
 

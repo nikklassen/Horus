@@ -14,7 +14,15 @@ import Calculator.Data.AST
 
 data Function = Function { params :: [String]
                          , body :: AST
-                         } deriving (Show, Eq)
+                         } deriving (Eq)
+
+showArgs :: [String] -> String
+showArgs [] = ""
+showArgs (a:[]) = a
+showArgs (a:as) = a ++ ", " ++ showArgs as
+
+instance Show Function where
+    show (Function p b) = "(" ++ showArgs p ++ ") = " ++ show b
 
 buildFunction :: [AST] -> AST -> Function
 buildFunction parameters = Function (getNames parameters)
