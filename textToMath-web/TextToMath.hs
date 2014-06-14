@@ -1,6 +1,11 @@
 {-# LANGUAGE OverloadedStrings, DoAndIfThenElse #-}
 
 module Main where
+
+import Calculator
+import Calculator.Functions (Function(..))
+import Calculator.DeepSeq()
+
 import Data.Text (Text)
 import Data.Text.Lazy (unpack, pack, splitOn)
 import Happstack.Server hiding (body, result)
@@ -10,7 +15,7 @@ import Text.Blaze.Html5.Attributes (href, class_, type_, action, name)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Snippets
-import Control.Exception (evaluate, ErrorCall, bracket)
+import Control.Exception (bracket)
 import Control.Applicative (optional)
 import qualified Control.Exception.Lifted as CEL
 import Debug.Trace (trace)
@@ -19,14 +24,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map (map, toList, assocs)
 import Data.Maybe (fromMaybe)
 import Data.Number.CReal
-import Calculator
-import Calculator.Functions (Function(..))
 import UserState
 import Data.Acid (AcidState)
 import Data.Acid.Local
 import Data.Acid.Advanced (query', update')
 import Control.Monad (msum)
 import System.UUID.V4 (uuid)
+import Control.DeepSeq (($!!))
 
 config :: Conf
 config = Conf { port        = 3000
@@ -107,15 +111,12 @@ calcPage acid =
                 addCookies [(Session, mkCookie "vars" $ serializeVars newVars)]
                 addCookies [(Session, mkCookie "funcs" $ serializeFuncs newFuncs)]
                 addCookies [(Session, mkCookie "user-id" $ show uuidValue)]
-                ok $ toResponse $
-                    case answer ans of
-                        Nothing -> "0"
-                        Just a -> show a
+                ok $ toResponse $ show $ answer ans
 
 getReturnText :: String -> Map String CReal -> Map String Function -> IO (Either String Result)
-getReturnText input variables functions = CEL.catch result
-                                                    (\e -> trace ("Caught error " ++ show (e :: ErrorCall)) $ return $ Left ("Invalid input" :: String))
-                                                    where result = Control.Exception.evaluate $ Right $ calculate input variables functions
+getReturnText input variables functions = CEL.catch (CEL.evaluate $!! result)
+                                                    (\e -> trace ("Caught error " ++ show (e :: CEL.ErrorCall)) $ return $ Left ("Invalid input" :: String))
+                                                    where result = Right $ calculate input variables functions
 
 serializeVars :: Map String CReal -> String
 serializeVars variables = encodeJSON $ Map.toList $ Map.map show variables

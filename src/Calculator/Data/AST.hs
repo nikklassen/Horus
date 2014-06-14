@@ -1,6 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module Calculator.Data.AST (
     AST(..)
 ) where
+
+import GHC.Generics
 
 data AST = EqlStmt AST AST
            | OpExpr String AST AST
@@ -8,7 +12,7 @@ data AST = EqlStmt AST AST
            | Var String
            | Number String
            | Neg AST
-           deriving (Eq)
+           deriving (Eq, Generic)
 
 showArgs :: [AST] -> String
 showArgs [] = ""

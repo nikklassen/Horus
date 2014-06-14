@@ -4,6 +4,8 @@ tags
 reports
 resources
 state/
+.cabal*
+cabal.*
 *.o
 *.hi
 *.chi

@@ -20,14 +20,17 @@ library
                    numbers,
                    containers,
                    parsec,
-                   mtl
+                   mtl,
+                   deepseq,
+                   deepseq-generics
 
     GHC-Options: -O2 -Wall -fno-warn-missing-signatures
     exposed-modules: Calculator,
                      Calculator.Parser,
                      Calculator.Functions,
                      Calculator.Data.AST,
-                     Calculator.Evaluator
+                     Calculator.Evaluator,
+                     Calculator.DeepSeq
     other-modules: Calculator.Parser.Helpers
 
 executable TextToMath
@@ -49,7 +52,8 @@ executable TextToMath
                    acid-state,
                    safecopy,
                    mtl,
-                   system-uuid
+                   system-uuid,
+                   deepseq
 
 test-suite Tests
     type: exitcode-stdio-1.0
@@ -62,6 +66,5 @@ test-suite Tests
                    test-framework-hunit >=0.3,
                    HUnit >=1.2,
                    containers >= 0.4.2.1,
-                   deepseq >=1.2 && <1.4,
                    numbers,
                    mtl
