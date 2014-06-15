@@ -85,7 +85,8 @@ operate op n1 n2 =
         "*" -> n1 * n2
         "-" -> n1 - n2
         "/" -> n1 / n2
-        "^" -> n1 ** n2
+        "^" -> let sign = n1 / abs(n1)
+               in sign * (abs(n1) ** n2)
         "%" -> realMod n1 n2
         o -> error $ "Unimplemented operator " ++ o
     where realMod a b = a - fromInteger (floor $ a/b) * b

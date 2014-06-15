@@ -25,6 +25,7 @@ tests = [ testGroup "Simple"
             , testCase "Decimal with exponent" decExp
             , testCase "Operator" op
             , testCase "Real mod" realMod
+            , testCase "Negative number with power" negToPower
             , testCase "Negate" neg
             , testCase "Function" function
             , testCase "User function" userFunction
@@ -63,6 +64,9 @@ op = process (OpExpr "+" (Number "1")
 
 realMod = process (OpExpr "%" (Number "4")
                               (Number "1.5")) @?= 1
+
+negToPower = process (OpExpr "^" (Number "-3")
+                                 (Number "-2")) @?= -1/9
 
 neg = process (Neg (Number "2")) @?= -2
 
