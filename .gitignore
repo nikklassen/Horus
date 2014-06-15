@@ -1,9 +1,9 @@
 dist
 cabal-dev
 tags
-reports
-resources
 state/
+resources/*/lib
+resources/reports
 .cabal*
 cabal.*
 *.o

@@ -58,7 +58,7 @@ template title htmlBody = toResponse $
   H.html $ do
     H.head $ do
       H.title (toHtml title)
-      H.link ! A.rel "stylesheet" ! href "/css/bootstrap.min.css"
+      H.link ! A.rel "stylesheet" ! href "/css/lib/bootstrap.min.css"
       H.script ! A.src  "//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" $ return ()
     H.body $ do
       header
