@@ -2,25 +2,38 @@
 
 $(document).ready(function() {
 
-    var getCookieValues = function(cookieName) {
-        var cookieVal = $.cookie(cookieName) || []
-
-        var vals = JSON.parse(cookieVal)
-        var variableTable = $('#vars').html()
-        $.each(vals, function(n, v) {
-            variableTable += '<tr><td>' + v[0] + '</td><td>' + v[1] + '</td></tr>'
-        })
-
-        $('#vars').html(variableTable)
+    var env = {
+        vars: {},
+        funcs: {}
     }
 
-    var refresh = function() {
+    var buildTable = function() {
+        var tableContent = ""
         $('#vars').empty()
-        getCookieValues('vars')
-        getCookieValues('funcs')
+        for (var key in env.vars) {
+            tableContent += '<tr><td>' + key + '</td><td>' + env.vars[key] + '</td></tr>'
+        }
+        $('#vars').html(tableContent)
+
+        tableContent = ""
+        $('#funcs').empty()
+        for (var key in env.funcs) {
+            tableContent += '<tr><td>' + key + '</td><td>' + env.funcs[key] + '</td></tr>'
+        }
+        $('#funcs').html(tableContent)
     }
 
-    refresh()
+    var addToEnv = function(vals) {
+        for (var key in vals.newVars) {
+            env.vars[key] = vals.newVars[key]
+        }
+
+        for (var key in vals.newFuncs) {
+            env.funcs[key] = vals.newFuncs[key]
+        }
+
+        buildTable()
+    }
 
     $('#math-form').submit(function (event) {
 
@@ -31,23 +44,24 @@ $(document).ready(function() {
 
         var posting = $.post(url, $(this).serialize())
         posting.done(function (data) {
-            $('#result')
-                .empty()
-                .removeClass('error')
-                .append(data)
+            var vals = JSON.parse(data)
+            addToEnv(vals)
 
-            refresh()
+            var $result = $('#result').empty()
+
+            var content = ""
+            if (vals.error !== undefined) {
+                $result.addClass('error')
+                       .append(vals.error)
+            } else {
+                $result.removeClass('error')
+                       .append(vals.result)
+            }
         });
-        posting.fail(function() {
-            $('#result')
-                .empty()
-                .addClass('error')
-                .append('Invalid input')
-        })
     })
 
-    $('#reset-vars').click(function () {
-        $.removeCookie('vars')
-        refresh()
+    $.get('/userInfo', function(data) {
+        var vals = JSON.parse(data)
+        addToEnv(vals)
     })
 })
