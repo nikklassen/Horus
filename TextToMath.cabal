@@ -40,8 +40,6 @@ executable TextToMath
     other-modules: UserState
     build-depends: base,
                    TextToMath,
-                   blaze-html,
-                   blaze-markup,
                    text,
                    happstack-server,
                    lifted-base >=0.2,

@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>TextToMath</title>
+<link rel="stylesheet" href="/css/lib/bootstrap.min.css" />
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="/js/homepage.js"></script>
+<script src="/js/lib/jquery.cookie.js"></script>
+<link rel="stylesheet" href="/css/homepage.css" />
+</head>
+<body>
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <div class="navbar-brand">
+                TextToMath
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="starter-template">
+        <div style="float: left; width: 80%">
+            <div style="margin: 0 auto; width: 90%">
+                <form action="/api/calculate" id="math-form" method="POST">
+                    <div class="form-group">
+                        <label for="input">Enter your equation below</label>
+                        <input type="textarea" name="input" id="input" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-default">Calculate</button>
+                </form>
+                <p id="result"></p>
+            </div>
+        </div>
+        <div style="float: right; width: 20%">
+            <table style="margin: 0 auto" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="vars"></tbody>
+                <tbody id="funcs"></tbody>
+            </table>
+            <button style="margin-top: 5px" id="reset-vars" class="btn btn-danger">Reset</button>
+        </div>
+    </div>
+</div>
+<footer>
+Created by Nik Klassen
+</footer>
+</body>
+</html>

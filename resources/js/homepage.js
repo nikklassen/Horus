@@ -60,7 +60,7 @@ $(document).ready(function() {
         });
     })
 
-    $.get('/userInfo', function(data) {
+    $.get('/api/userInfo', function(data) {
         var vals = JSON.parse(data)
         addToEnv(vals)
     })
