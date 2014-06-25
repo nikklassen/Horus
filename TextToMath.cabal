@@ -51,12 +51,14 @@ executable TextToMath
                    safecopy,
                    mtl,
                    system-uuid,
-                   deepseq
+                   deepseq,
+                   bytestring,
+                   aeson
 
 test-suite Tests
     type: exitcode-stdio-1.0
     main-is: TestSuite.hs
-    hs-source-dirs: tests
+    hs-source-dirs: tests/integration
     build-depends: base,
                    TextToMath,
                    testpack,

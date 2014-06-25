@@ -17,6 +17,19 @@ body {
     color: red;
 }
 
+.glyphicon-remove {
+    opacity: 0;
+    transition: all 0.1s ease-in-out;
+    float: right;
+    padding-top: 3px;
+}
+
+tr:hover .glyphicon-remove {
+    opacity: 100;
+    text-decoration: none;
+    color: black;
+}
+
 .table.table-bordered td,
 .table.table-bordered th {
     border-left: 0;
