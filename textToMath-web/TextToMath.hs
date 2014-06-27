@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, DoAndIfThenElse #-}
 
-module Main where
+module TextToMath (
+    app
+) where
 
 import Calculator
 import Calculator.Functions (Function(..))
@@ -9,7 +11,6 @@ import Calculator.DeepSeq()
 import qualified Data.Text.Lazy as T (unpack)
 import Data.ByteString.Char8 (unpack)
 import Happstack.Server hiding (body, result)
-import Control.Exception (bracket)
 import Control.Applicative (optional, (<$>))
 import qualified Control.Exception.Lifted as CEL
 import Debug.Trace (trace)
@@ -22,7 +23,6 @@ import Data.Number.CReal
 import UserState
 import Serializer
 import Data.Acid (AcidState)
-import Data.Acid.Local
 import Data.Acid.Advanced (query', update')
 import Control.Monad (msum)
 import System.UUID.V4 (uuid)
@@ -31,23 +31,8 @@ import Text.JSON.String
 import Text.JSON.Types
 import qualified Data.Aeson as Aeson
 
-config :: Conf
-config = Conf { port        = 3000
-              , validator   = Nothing
-              , logAccess   = Just logMAccess
-              , timeout     = 30
-              , threadGroup = Nothing
-              }
-
-main :: IO ()
-main = bracket (openLocalState UserState.emptyState)
-               createCheckpointAndClose
-               (\acid -> simpleHTTP config $ do
-                   decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096)
-                   myApp acid)
-
-myApp :: AcidState UserDb -> ServerPart Response
-myApp acid = msum
+app :: AcidState UserDb -> ServerPart Response
+app acid = msum
   [ dir "calculate" (calc acid)
   , dir "userInfo" (getUserInfo acid)	      -- GET
   , dir "userInfo" (resetUserInfo acid)	    -- DELETE

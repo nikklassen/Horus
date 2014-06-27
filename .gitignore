@@ -1,7 +1,6 @@
-dist
-cabal-dev
-tags
 state/
+obj/
+bin/
 resources/*/lib
 resources/reports
 .cabal*

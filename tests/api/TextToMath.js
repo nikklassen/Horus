@@ -1,9 +1,9 @@
+/* global require, describe, it */
+
 var expect = require('expect.js')
 var request = require('supertest')
 
 describe('TextToMath Api', function() {
-
-    var userId = ""
 
     describe('Calculate', function() {
 
@@ -90,5 +90,137 @@ describe('TextToMath Api', function() {
 
     })
 
-    // TODO test userInfo routes once the test server has been written
+    // Test server data
+    // User name: testUser
+    // Vars:			a = 2.0
+    // Functions: a(x) = x + 2
+    //
+    // User name: testUser2
+    // Vars:			b = 3.0
+    // Functions: b(x) = x + 3
+    describe('UserInfo', function() {
+
+        it('should return userInfo', function(done) {
+
+            request('localhost')
+                .get('/api/userInfo')
+                .set('Cookie', 'user-id=testUser')
+                .expect(200)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    var body = res.body
+                    expect(body.newVars).to.eql({ a: '2.0' })
+                    expect(body.newFuncs).to.eql({ a: '(x) = (x + 2)' })
+
+                    done()
+                })
+        })
+
+        it('should delete userInfo', function(done) {
+
+            request('localhost')
+                .del('/api/userInfo')
+                .set('Cookie', 'user-id=testUser')
+                .expect(204)
+                .end(function(err) {
+                    if (err) {
+                        throw err
+                    }
+
+                    done()
+                })
+        })
+
+        it('should reject content type', function(done) {
+
+            request('localhost')
+                .post('/api/userInfo')
+                .set('Cookie', 'user-id=testUser2')
+                .set('Content-Type', 'text/plain')
+                .send('[{ "op": "remove", "path": "/var/b" }]')
+                .expect(415)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    expect(res.text).to.be('Content type must be application/json-patch+json')
+
+                    done()
+                })
+        })
+
+        it('should only permit remove', function(done) {
+
+            request('localhost')
+                .post('/api/userInfo')
+                .set('Cookie', 'user-id=testUser2')
+                .set('Content-Type', 'application/json-patch+json')
+                .send('[{ "op": "add", "path": "/var/b" }]')
+                .expect(400)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    expect(res.text).to.be('Unpermitted operation')
+
+                    done()
+                })
+        })
+
+        it('should be unable to apply the patch', function(done) {
+
+            request('localhost')
+                .post('/api/userInfo')
+                .set('Cookie', 'user-id=testUser2')
+                .set('Content-Type', 'application/json-patch+json')
+                .send('[{ "op": "remove", "path": "/var/nonexistantVar" }]')
+                .expect(400)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    expect(res.text).to.be('Unable to apply patch')
+
+                    done()
+                })
+        })
+
+        it('should delete the saved information', function(done) {
+
+            request('localhost')
+                .post('/api/userInfo')
+                .set('Cookie', 'user-id=testUser2')
+                .set('Content-Type', 'application/json-patch+json')
+                .send('[{ "op": "remove", "path": "/var/b" }, { "op": "remove", "path": "/func/b" }]')
+                .expect(200)
+                .end(function(err) {
+                    if (err) {
+                        throw err
+                    }
+
+                    request('localhost')
+                        .get('/api/userInfo')
+                        .set('Cookie', 'user-id=testUser2')
+                        .expect(200)
+                        .end(function(err, res) {
+                            if (err) {
+                                throw err
+                            }
+
+                            var body = res.body
+
+                            expect(body.newVars).to.eql({})
+                            expect(body.newFuncs).to.eql({})
+
+                            done()
+                        })
+                })
+        })
+    })
 })
