@@ -1,25 +1,18 @@
-module Serializer (
-    serializeVars,
-    serializeFuncs,
-    serializeResult
-) where
+{-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import Calculator
+module Serializer where
+
 import Calculator.Functions
-import Data.Map (Map)
-import qualified Data.Map as Map
 import Data.Number.CReal
-import Text.JSON.Generic (toJSON)
-import Text.JSON.Types
-import Control.Arrow
+import Data.Text
+import Data.Aeson
 
-serializeVars :: Map String CReal -> JSValue
-serializeVars variables = JSObject $ toJSObject $ Map.assocs $ Map.map (toJSON . show) variables
+instance ToJSON CReal where
+    toJSON = toValue
 
-serializeFuncs :: Map String Function -> JSValue
-serializeFuncs functions = JSObject $ toJSObject $ map (second (toJSON . show)) $ Map.assocs functions
+instance ToJSON Function where
+    toJSON = toValue
 
-serializeResult :: Either String Result -> [(String, JSValue)]
-serializeResult (Left err) = [("error", toJSON err)]
-serializeResult (Right result) = [("result", toJSON $ show $ answer result)]
-
+toValue :: Show a => a -> Value
+toValue = String . pack . show

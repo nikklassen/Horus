@@ -21,15 +21,15 @@ import qualified Data.Map as Map
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Number.CReal
 import UserState
-import Serializer
+import Serializer()
 import Data.Acid (AcidState)
 import Data.Acid.Advanced (query', update')
 import Control.Monad (msum)
 import System.UUID.V4 (uuid)
 import Control.DeepSeq (($!!))
-import Text.JSON.String
-import Text.JSON.Types
-import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Types as Aeson hiding (Result)
+import qualified Data.Aeson as Aeson (encode, decode)
+import Data.Aeson ((.=))
 
 app :: AcidState UserDb -> ServerPart Response
 app acid = msum
@@ -50,21 +50,22 @@ calc acid =
         result <- liftIO $ getReturnText (T.unpack input) crealVars functions
         addCookie Session $ mkCookie "user-id" userId
         case result of
-            Left _ -> do
-                let res = toResponse $ makeResponse (JSObject $ toJSObject []) (JSObject $ toJSObject []) result ""
+            Left err -> do
+                let res = toResponse $ makeResponse Aeson.emptyObject Aeson.emptyObject $ "error" .= err
                 badRequest $ jsonResponse res
             Right ans -> do let newVars = vars ans
                             let newFuncs = funcs ans
                             update' acid (UserState.SetUser userId $ User (Map.map show newVars) newFuncs)
-                            let serializedVars = serializeVars $ Map.differenceWith takeFirst newVars crealVars
-                            let serializedFuncs = serializeFuncs $ Map.differenceWith takeFirst newFuncs functions
-                            let res = toResponse $ makeResponse serializedVars serializedFuncs result ""
+                            let addedVars = Map.differenceWith takeFirst newVars crealVars
+                            let addedFuncs = Map.differenceWith takeFirst newFuncs functions
+                            let res = toResponse $ makeResponse addedVars addedFuncs $ "result" .= answer ans
                             ok $ jsonResponse res
         where takeFirst a b = if a /= b then Just a else Nothing
-              makeResponse vs fs res = showJSTopType $ JSObject $ toJSObject $
-                [ ("newVars", vs)
-                , ("newFuncs", fs)
-                ] ++ serializeResult res
+              makeResponse vs fs res = Aeson.encode $ Aeson.object
+                [ "newVars" .= vs
+                , "newFuncs" .= fs
+                , res
+                ]
 
 getUserInfo :: AcidState UserDb -> ServerPart Response
 getUserInfo acid = do
@@ -72,12 +73,11 @@ getUserInfo acid = do
     userId <- getUserId
     User variables functions <- query' acid (UserState.GetUser userId)
     addCookie Session $ mkCookie "user-id" userId
-    let res = toResponse $ serialize (Map.map read variables) functions ""
+    let res = toResponse $ Aeson.encode $ Aeson.object
+                                [ "vars" .= variables
+                                , "funcs" .= functions
+                                ]
     ok $ jsonResponse res
-    where serialize vs fs = showJSTopType $ JSObject $ toJSObject
-                            [ ("newVars", serializeVars vs)
-                            , ("newFuncs", serializeFuncs fs)
-                            ]
 
 resetUserInfo :: AcidState UserDb -> ServerPart Response
 resetUserInfo acid = do

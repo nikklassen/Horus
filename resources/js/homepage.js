@@ -15,10 +15,7 @@ function del(type, name, self) {
 
 $(document).ready(function() {
 
-    var env = {
-        vars: {},
-        funcs: {}
-    }
+    var env = {}
 
     var buildTable = function() {
         var tableContent = ""
@@ -45,16 +42,12 @@ $(document).ready(function() {
         $('#funcs').html(tableContent)
     }
 
-    var addToEnv = function(vals) {
-        for (var key in vals.newVars) {
-            env.vars[key] = vals.newVars[key]
-        }
+    var addToEnv = function(envProp, data, dataProp) {
+        env[envProp] = env[envProp] || {}
 
-        for (var key in vals.newFuncs) {
-            env.funcs[key] = vals.newFuncs[key]
+        for (var key in data[dataProp]) {
+            env[envProp][key] = data[dataProp][key]
         }
-
-        buildTable()
     }
 
     $('#math-form').submit(function (event) {
@@ -67,7 +60,10 @@ $(document).ready(function() {
         var posting = $.post(url, $(this).serialize())
         posting.done(function (data) {
 
-            addToEnv(data)
+            addToEnv('vars', data, 'newVars')
+            addToEnv('funcs', data, 'newFuncs')
+
+            buildTable()
 
             var $result = $('#result').empty()
 
@@ -92,6 +88,10 @@ $(document).ready(function() {
     })
 
     $.get('/api/userInfo', function(data) {
-        addToEnv(data)
+
+        addToEnv('vars', data, 'vars')
+        addToEnv('funcs', data, 'funcs')
+
+        buildTable()
     })
 })

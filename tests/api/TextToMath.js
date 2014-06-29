@@ -112,8 +112,8 @@ describe('TextToMath Api', function() {
                     }
 
                     var body = res.body
-                    expect(body.newVars).to.eql({ a: '2.0' })
-                    expect(body.newFuncs).to.eql({ a: '(x) = (x + 2)' })
+                    expect(body.vars).to.eql({ a: '2.0' })
+                    expect(body.funcs).to.eql({ a: '(x) = (x + 2)' })
 
                     done()
                 })
@@ -215,8 +215,8 @@ describe('TextToMath Api', function() {
 
                             var body = res.body
 
-                            expect(body.newVars).to.eql({})
-                            expect(body.newFuncs).to.eql({})
+                            expect(body.vars).to.eql({})
+                            expect(body.funcs).to.eql({})
 
                             done()
                         })
