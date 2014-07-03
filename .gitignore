@@ -1,7 +1,6 @@
 state/
 obj/
 bin/
-resources/*/lib
 resources/reports
 .cabal*
 cabal.*
