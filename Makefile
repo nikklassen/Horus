@@ -7,6 +7,9 @@ TESTDIR = tests
 GHC_OPTIONS = -hidir obj -odir obj -O -j2
 INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 
+StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
+KillTestServer = @killall test_server
+
 server: textToMath-web/Server.hs | $(BINDIR)
 		@echo "Building server"
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/server
@@ -16,13 +19,22 @@ test_server: tests/TestServer.hs | $(BINDIR)
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/test_server
 
 .PHONY: tests
-tests: $(TESTDIR)/integration/TestSuite.hs test_server | $(BINDIR)
-		@echo "Building tests"
+tests: int_tests e2e_tests api_tests
+
+int_tests: $(TESTDIR)/integration/TestSuite.hs test_server | $(BINDIR)
+		@echo "Building integration tests"
 		ghc $< $(INCLUDES) -i$(TESTDIR)/integration $(GHC_OPTIONS) -o $(BINDIR)/tests
-		$(BINDIR)/test_server > /dev/null 2>&1 &
 		-$(BINDIR)/tests
-		-mocha tests/api
-		@killall test_server
+
+e2e_tests: test_server
+		$(StartTestServer)
+		-protractor $(TESTDIR)/protractor.conf.js
+		$(KillTestServer)
+
+api_tests: test_server
+		$(StartTestServer)
+		-mocha tests/api -R spec
+		$(KillTestServer)
 
 $(OBJDIR) $(BINDIR):
 		@mkdir -p $@

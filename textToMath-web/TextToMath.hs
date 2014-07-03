@@ -8,7 +8,6 @@ import Calculator
 import Calculator.Functions (Function(..))
 import Calculator.DeepSeq()
 
-import qualified Data.Text.Lazy as T (unpack)
 import Data.ByteString.Char8 (unpack)
 import Happstack.Server hiding (body, result)
 import Control.Applicative (optional, (<$>))
@@ -40,30 +39,36 @@ app acid = msum
   ]
 
 calc :: AcidState UserDb -> ServerPart Response
-calc acid =
-    do
+calc acid = do
         method POST
-        input <- lookText "input"
-        userId <- getUserId
-        User variables functions <- query' acid (UserState.GetUser userId)
-        let crealVars = Map.map read variables
-        result <- liftIO $ getReturnText (T.unpack input) crealVars functions
-        addCookie Session $ mkCookie "user-id" userId
-        case result of
-            Left err -> do
-                let res = toResponse $ makeResponse Aeson.emptyObject Aeson.emptyObject $ "error" .= err
-                badRequest $ jsonResponse res
-            Right ans -> do let newVars = vars ans
-                            let newFuncs = funcs ans
-                            update' acid (UserState.SetUser userId $ User (Map.map show newVars) newFuncs)
-                            let addedVars = Map.differenceWith takeFirst newVars crealVars
-                            let addedFuncs = Map.differenceWith takeFirst newFuncs functions
-                            let res = toResponse $ makeResponse addedVars addedFuncs $ "result" .= answer ans
-                            ok $ jsonResponse res
+        rq <- askRq
+        if contentType "application/json" rq then do
+            maybeBody <- takeRequestBody rq
+            case Aeson.decode $ unBody $ fromMaybe (Body "") maybeBody :: Maybe (Map String String) of
+                Just b -> do
+                    let input = fromMaybe "" $ Map.lookup "input" b
+                    userId <- getUserId
+                    User variables functions <- query' acid (UserState.GetUser userId)
+                    let crealVars = Map.map read variables
+                    result <- liftIO $ getReturnText input crealVars functions
+                    addCookie Session $ mkCookie "user-id" userId
+                    case result of
+                        Left err -> do
+                            let res = toResponse $ makeResponse Aeson.emptyObject Aeson.emptyObject $ "error" .= err
+                            badRequest $ jsonResponse res
+                        Right ans -> do let newVars = vars ans
+                                        let newFuncs = funcs ans
+                                        update' acid (UserState.SetUser userId $ User (Map.map show newVars) newFuncs)
+                                        let addedVars = Map.differenceWith takeFirst newVars crealVars
+                                        let addedFuncs = Map.differenceWith takeFirst newFuncs functions
+                                        let res = toResponse $ makeResponse addedVars addedFuncs $ "result" .= answer ans
+                                        ok $ jsonResponse res
+                Nothing -> badRequest $ toResponse ("Unable to parse body" :: String)
+        else resp 415 $ toResponse ("Content type must be application/json" :: String)
         where takeFirst a b = if a /= b then Just a else Nothing
               makeResponse vs fs res = Aeson.encode $ Aeson.object
-                [ "newVars" .= vs
-                , "newFuncs" .= fs
+                [ "vars" .= vs
+                , "funcs" .= fs
                 , res
                 ]
 
@@ -90,11 +95,10 @@ modifyUserInfo :: AcidState UserDb -> ServerPart Response
 modifyUserInfo acid = do
     method POST
     rq <- askRq
-    userId <- getUserId
-    let contentType = Data.ByteString.Char8.unpack $ fromMaybe "" $ getHeader ("Content-Type" :: String) rq
-    maybeBody <- takeRequestBody rq
-    let b = unBody $ fromMaybe (Body "") maybeBody
-    if contentType == "application/json-patch+json" then
+    if contentType "application/json-patch+json" rq then do
+        userId <- getUserId
+        maybeBody <- takeRequestBody rq
+        let b = unBody $ fromMaybe (Body "") maybeBody
         case Aeson.decode b of
             Just values ->
                 if all isRemove values then do
@@ -109,8 +113,7 @@ modifyUserInfo acid = do
                 else
                     badRequest $ toResponse ("Unpermitted operation" :: String)
             Nothing -> badRequest $ toResponse ("Unable to parse body" :: String)
-    else
-        resp 415 $ toResponse ("Content type must be application/json-patch+json" :: String)
+    else resp 415 $ toResponse ("Content type must be application/json-patch+json" :: String)
     where isRemove m = case Map.lookup "op" m of
                             Just o -> o == "remove"
                             Nothing -> False
@@ -119,14 +122,14 @@ runAction :: Maybe User -> Map String String -> Maybe User
 runAction (Just (User vs fs)) action
     | Map.size action == 2 =
         case Map.lookup "path" action of
-            Just p  | "/var/" `isPrefixOf` p ->
-                        let Just varName = stripPrefix "/var/" p
+            Just p  | "/vars/" `isPrefixOf` p ->
+                        let Just varName = stripPrefix "/vars/" p
                         in if Map.member varName vs then
                             Just $ User (Map.delete varName vs) fs
                         else
                             Nothing
-                    | "/func/" `isPrefixOf` p ->
-                        let Just funcName = stripPrefix "/func/" p
+                    | "/funcs/" `isPrefixOf` p ->
+                        let Just funcName = stripPrefix "/funcs/" p
                         in if Map.member funcName fs then
                             Just $ User vs $ Map.delete funcName fs
                         else
@@ -149,3 +152,7 @@ getReturnText input variables functions = CEL.catch (CEL.evaluate $!! result)
 
 jsonResponse :: Response -> Response
 jsonResponse = addHeader "Content-Type" "application/json"
+
+contentType :: String -> Request -> Bool
+contentType ct rq = ct == rqCt rq
+                    where rqCt r = Data.ByteString.Char8.unpack $ fromMaybe "" $ getHeader ("Content-Type" :: String) r

@@ -11,7 +11,6 @@ describe('TextToMath Api', function() {
 
             request('localhost')
                 .post('/api/calculate')
-                .type('form')
                 .send({ input: '1+1' })
                 .expect(200)
                 .end(function(err, res) {
@@ -21,8 +20,8 @@ describe('TextToMath Api', function() {
 
                     var body = res.body
                     expect(body.result).to.be('2.0')
-                    expect(body.newVars).to.eql({})
-                    expect(body.newFuncs).to.eql({})
+                    expect(body.vars).to.eql({})
+                    expect(body.funcs).to.eql({})
 
                     done()
                 })
@@ -32,7 +31,6 @@ describe('TextToMath Api', function() {
 
             request('localhost')
                 .post('/api/calculate')
-                .type('form')
                 .send({ input: '1 = 1'})
                 .expect(400)
                 .end(function(err, res) {
@@ -50,7 +48,6 @@ describe('TextToMath Api', function() {
 
             request('localhost')
                 .post('/api/calculate')
-                .type('form')
                 .send({ input: 'a = 1'})
                 .expect(200)
                 .end(function(err, res) {
@@ -60,8 +57,8 @@ describe('TextToMath Api', function() {
 
                     var body = res.body
                     expect(body.result).to.be('1.0')
-                    expect(body.newVars).to.eql({ a: '1.0' })
-                    expect(body.newFuncs).to.eql({})
+                    expect(body.vars).to.eql({ a: '1.0' })
+                    expect(body.funcs).to.eql({})
 
                     done()
                 })
@@ -71,7 +68,6 @@ describe('TextToMath Api', function() {
 
             request('localhost')
                 .post('/api/calculate')
-                .type('form')
                 .send({ input: 'a(x) = x + 1' })
                 .expect(200)
                 .end(function(err, res) {
@@ -81,8 +77,8 @@ describe('TextToMath Api', function() {
 
                     var body = res.body
                     expect(body.result).to.be('0.0')
-                    expect(body.newVars).to.eql({})
-                    expect(body.newFuncs).to.eql({ a: '(x) = (x + 1)' })
+                    expect(body.vars).to.eql({})
+                    expect(body.funcs).to.eql({ a: '(x) = (x + 1)' })
 
                     done()
                 })
@@ -197,7 +193,7 @@ describe('TextToMath Api', function() {
                 .post('/api/userInfo')
                 .set('Cookie', 'user-id=testUser2')
                 .set('Content-Type', 'application/json-patch+json')
-                .send('[{ "op": "remove", "path": "/var/b" }, { "op": "remove", "path": "/func/b" }]')
+                .send('[{ "op": "remove", "path": "/vars/b" }, { "op": "remove", "path": "/funcs/b" }]')
                 .expect(200)
                 .end(function(err) {
                     if (err) {
