@@ -1,2 +1,2 @@
 let g:CommandTWildIgnore = g:CommandTWildIgnore . ",obj,state,bin"
-let g:syntastic_haskell_ghc_mod_args = "-g -isrc -g -itextToMath-web"
+let g:syntastic_haskell_ghc_mod_args = "-g -icalculator -g -iapi"
