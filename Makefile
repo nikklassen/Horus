@@ -1,7 +1,7 @@
 OBJDIR = obj
 BINDIR = bin
-LIBDIR = src
-APIDIR = textToMath-web
+LIBDIR = calculator
+APIDIR = api
 TESTDIR = tests
 
 GHC_OPTIONS = -hidir obj -odir obj -O -j2
@@ -10,11 +10,11 @@ INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
 KillTestServer = @killall test_server
 
-server: textToMath-web/Server.hs | $(BINDIR)
+server: $(APIDIR)/Server.hs | $(BINDIR)
 		@echo "Building server"
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/server
 
-test_server: tests/TestServer.hs | $(BINDIR)
+test_server: $(TESTDIR)/TestServer.hs | $(BINDIR)
 		@echo "Building test server"
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/test_server
 
