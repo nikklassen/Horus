@@ -78,7 +78,7 @@ describe('TextToMath Api', function() {
                     var body = res.body
                     expect(body.result).to.be('0.0')
                     expect(body.vars).to.eql({})
-                    expect(body.funcs).to.eql({ a: '(x) = (x + 1)' })
+                    expect(body.funcs).to.eql({ a: '(x) = (1.0 + x)' })
 
                     done()
                 })
@@ -89,11 +89,11 @@ describe('TextToMath Api', function() {
     // Test server data
     // User name: testUser
     // Vars:			a = 2.0
-    // Functions: a(x) = x + 2
+    // Functions: a(x) = 2.0 + x
     //
     // User name: testUser2
     // Vars:			b = 3.0
-    // Functions: b(x) = x + 3
+    // Functions: b(x) = 3.0 + x
     describe('UserInfo', function() {
 
         it('should return userInfo', function(done) {
@@ -109,7 +109,7 @@ describe('TextToMath Api', function() {
 
                     var body = res.body
                     expect(body.vars).to.eql({ a: '2.0' })
-                    expect(body.funcs).to.eql({ a: '(x) = (x + 2)' })
+                    expect(body.funcs).to.eql({ a: '(x) = (2.0 + x)' })
 
                     done()
                 })

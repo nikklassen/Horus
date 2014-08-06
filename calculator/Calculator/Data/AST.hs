@@ -4,13 +4,14 @@ module Calculator.Data.AST (
     AST(..)
 ) where
 
+import Data.Number.CReal
 import GHC.Generics
 
 data AST = EqlStmt AST AST
            | OpExpr String AST AST
            | FuncExpr String [AST]
            | Var String
-           | Number String
+           | Number CReal
            | Neg AST
            deriving (Eq, Generic)
 
@@ -28,6 +29,6 @@ instance Show AST where
 
     show (Var v) = v
 
-    show (Number n) = n
+    show (Number n) = show n
 
     show (Neg e) = "-" ++ show e

@@ -33,11 +33,11 @@ var Homepage = function() {
 // Test server data
 // User name: testUser
 // Vars:			a = 2.0
-// Functions: a(x) = x + 2
+// Functions: a(x) = 2.0 + x
 //
 // User name: testUser2
 // Vars:			b = 3.0
-// Functions: b(x) = x + 3
+// Functions: b(x) = 3.0 + x
 describe('homepage', function () {
 
     beforeEach(function() {
@@ -92,7 +92,7 @@ describe('homepage', function () {
         assert.eventually.equal(element.all(by.repeater('v in env.funcs')).count(), 1)
 
         expect(element(rowBy.column('getFuncName(v)')).getText()).to.eventually.equal('a(x)')
-        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(x + 2)')
+        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(2.0 + x)')
     })
 
     it('should replace existing variable', function() {
@@ -120,7 +120,7 @@ describe('homepage', function () {
         var rowBy = by.repeater('v in env.funcs').row(0)
 
         expect(element(rowBy.column('getFuncName(v)')).getText()).to.eventually.equal('a(y)')
-        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(y + 3)')
+        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(3.0 + y)')
         expect(element.all(by.repeater('v in env.funcs')).count()).to.eventually.equal(1)
     })
 
@@ -166,7 +166,7 @@ describe('homepage', function () {
 
         assert.eventually.equal(element.all(funcBy).count(), 2)
         expect(element(funcBy.row(1).column('getFuncName(v)')).getText()).to.eventually.equal('z(x)')
-        expect(element(funcBy.row(1).column('getFuncValue(v)')).getText()).to.eventually.equal('(x * 2)')
+        expect(element(funcBy.row(1).column('getFuncValue(v)')).getText()).to.eventually.equal('(2.0 * x)')
         expect(homepage.result.getText()).to.eventually.equal('0.0')
     })
 

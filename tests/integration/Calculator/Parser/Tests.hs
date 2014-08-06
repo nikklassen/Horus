@@ -47,35 +47,35 @@ tests = [ testGroup "Simple" [
             testCase "Equals number" parseEqlNum,
             testCase "Mismatched parens" parseMismatchParen,
             testCase "Missing paren" parseMissingParen,
-            testCase "Equality, missing left" parseEqlMissingLeft, 
+            testCase "Equality, missing left" parseEqlMissingLeft,
             testCase "Equality, missing right" parseEqlMissingRight
             ]
         , testCase "Big" parseBig
         ]
 
-parseInt = parse "0123456789876543210" @?= Number "0123456789876543210"
+parseInt = parse "0123456789876543210" @?= Number 0123456789876543210
 
-parseDec = parse ".9" @?= Number ".9"
+parseDec = parse ".9" @?= Number 0.9
 
-parseExp = parse "9e10 / 9e-10" @?= OpExpr "/" (Number "9e10") (Number "9e-10")
+parseExp = parse "9e10 / 9e-10" @?= OpExpr "/" (Number 9e10) (Number 9e-10)
 
-parseDecExp = parse "2.3e2" @?= Number "2.3e2"
+parseDecExp = parse "2.3e2" @?= Number 2.3e2
 
 parseId = parse "thisisateststring * abc123" @?= OpExpr "*" (Var "thisisateststring") (Var "abc123")
 
-parseBrack = parse "(2) * [3]" @?= OpExpr "*" (Number "2") (Number "3")
+parseBrack = parse "(2) * [3]" @?= OpExpr "*" (Number 2) (Number 3)
 
-parseWhitespace = parse "         1         " @?= Number "1"
+parseWhitespace = parse "         1         " @?= Number 1
 
-parseFuncs = parse "sin(1)" @?= FuncExpr "sin" [Number "1"]
+parseFuncs = parse "sin(1)" @?= FuncExpr "sin" [Number 1]
 
-parseFuncMulti = parse "f( a , 2 )" @?= FuncExpr "f" [Var "a", Number "2"]
+parseFuncMulti = parse "f( a , 2 )" @?= FuncExpr "f" [Var "a", Number 2]
 
-parseFuncDef = parse "f(a) = a + 2" @?= EqlStmt (FuncExpr "f" [Var "a"]) (OpExpr "+" (Var "a") (Number "2"))
+parseFuncDef = parse "f(a) = a + 2" @?= EqlStmt (FuncExpr "f" [Var "a"]) (OpExpr "+" (Var "a") (Number 2))
 
-parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number "1")
+parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number 1)
 
-parseNeg = parse "1 / -2" @?= OpExpr "/" (Number "1") (Neg (Number "2"))
+parseNeg = parse "1 / -2" @?= OpExpr "/" (Number 1) (Neg (Number 2))
 
 parseIntId = assertException (evaluate $ parse "123abc")
 
@@ -109,9 +109,9 @@ parseMissingParen = assertException (evaluate $ parse "(((2))")
 
 parseBig = parse "c=(8*9e10+(7.289 / 3) % x -10)" @?=
     EqlStmt (Var "c")
-            (OpExpr "%" (OpExpr "+" (OpExpr "*" (Number "8")
-                                                (Number "9e10"))
-                                    (OpExpr "/" (Number "7.289")
-                                                (Number "3")))
+            (OpExpr "%" (OpExpr "+" (OpExpr "*" (Number 8)
+                                                (Number 9e10))
+                                    (OpExpr "/" (Number 7.289)
+                                                (Number 3)))
                         (OpExpr "-" (Var "x")
-                                    (Number "10")))
+                                    (Number 10)))

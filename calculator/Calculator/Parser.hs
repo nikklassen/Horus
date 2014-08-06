@@ -4,16 +4,15 @@ module Calculator.Parser (
     parse
 ) where
 
-import Text.Parsec.Char(char, spaces, space)
-import Text.Parsec.Prim ((<?>), (<|>), try)
-import qualified Text.Parsec.Prim as Parsec (parse)
-import Text.Parsec.Combinator (many1, choice, eof, sepBy)
-import Text.Parsec.String (Parser)
-import Control.Applicative ((<$>), (*>), (<*))
-import Text.Parsec.Expr
-
 import Calculator.Data.AST
 import Calculator.Parser.Helpers
+import Control.Applicative ((<$>), (*>), (<*))
+import Text.Parsec.Char(char, spaces, space)
+import Text.Parsec.Combinator (many1, choice, eof, sepBy)
+import Text.Parsec.Expr
+import Text.Parsec.Prim ((<?>), (<|>), try)
+import Text.Parsec.String (Parser)
+import qualified Text.Parsec.Prim as Parsec (parse)
 
 numeric :: Parser AST
 numeric = Number <$> choice [decimal, float]

@@ -36,5 +36,5 @@ testState = UserDb $ Map.fromList
                     (Map.fromList [("b", "3.0")])
                     (Map.fromList [("b", b)]))
                 ]
-            where a = Function ["x"] (OpExpr "+" (Var "x") (Number "2"))
-                  b = Function ["x"] (OpExpr "+" (Var "x") (Number "3"))
+            where a = Function ["x"] (OpExpr "+" (Number 2) (Var "x"))
+                  b = Function ["x"] (OpExpr "+" (Number 3) (Var "x"))

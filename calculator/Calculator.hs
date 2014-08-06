@@ -1,12 +1,11 @@
 module Calculator where
 
-import Calculator.Parser
 import Calculator.Evaluator
+import Calculator.Canon
 import Calculator.Functions
-
+import Calculator.Parser
 import Data.Number.CReal
 import Data.Map (Map)
-import Control.Monad.State
 
 data Result = Result {
     answer :: CReal,
@@ -15,5 +14,5 @@ data Result = Result {
 } deriving (Eq, Show)
 
 calculate :: String -> Map String CReal -> Map String Function -> Result
-calculate eq varMap funcMap = let (r, Env vs fs) = runState (eval (parse eq)) $ Env varMap funcMap
+calculate eq varMap funcMap = let (r, Env vs fs) = evalPass (canonPass $ parse eq) varMap funcMap
                               in Result r vs fs

@@ -1,16 +1,16 @@
 module Calculator.Evaluator (
     Env(..),
-    eval
+    evalPass,
+    operate
 ) where
 
 import Calculator.Data.AST
 import Calculator.Functions
-
-import Data.Number.CReal
-import Data.Map (Map)
-import qualified Data.Map as Map (alter, lookup, fromList, empty)
-import Control.Monad.State
 import Control.Applicative ((<$>))
+import Control.Monad.State
+import Data.Map (Map)
+import Data.Number.CReal
+import qualified Data.Map as Map (alter, lookup, fromList, empty)
 
 data Env = Env { getVars :: Map String CReal
                , getFuncs :: Map String Function
@@ -18,8 +18,11 @@ data Env = Env { getVars :: Map String CReal
 
 type EnvState = State Env
 
+evalPass :: AST -> Map String CReal -> Map String Function -> (CReal, Env)
+evalPass ast varMap funcMap = runState (eval ast) $ Env varMap funcMap
+
 eval :: AST -> EnvState CReal
-eval (Number val) = return $ toNumber val
+eval (Number n) = return n
 
 eval (Var var) = do
     vars <- getVars <$> get
@@ -68,16 +71,6 @@ zip' (x:xs) (y:ys) = (x, y) : zip' xs ys
 zip' [] [] = []
 zip' _ _ = error "Unexpected number of arguments"
 
-toNumber :: String -> CReal
-toNumber ('.':xs) = toNumber $ "0." ++ xs
-toNumber num
-    | 'e' `elem` num =
-        let (a, b) = break (=='e') num
-            base = read a
-            ex = read $ tail b
-        in base * 10**ex
-    | otherwise = read num
-
 operate :: String -> CReal -> CReal -> CReal
 operate op n1 n2 =
     case op of
@@ -85,8 +78,8 @@ operate op n1 n2 =
         "*" -> n1 * n2
         "-" -> n1 - n2
         "/" -> n1 / n2
-        "^" -> let sign = n1 / abs(n1)
-               in sign * (abs(n1) ** n2)
+        "^" -> let sign = n1 / abs n1
+               in sign * (abs n1 ** n2)
         "%" -> realMod n1 n2
         o -> error $ "Unimplemented operator " ++ o
     where realMod a b = a - fromInteger (floor $ a/b) * b

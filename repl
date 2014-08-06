@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/local/bin/ghc --interactive -no-user-package-db -package-db .cabal-sandbox/x86_64-osx-ghc-7.8.2-packages.conf.d -icalculator $1

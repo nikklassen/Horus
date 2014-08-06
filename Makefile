@@ -4,7 +4,7 @@ LIBDIR = calculator
 APIDIR = api
 TESTDIR = tests
 
-GHC_OPTIONS = -hidir obj -odir obj -O -j2
+GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fllvm -fhpc
 INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
@@ -21,8 +21,9 @@ test_server: $(TESTDIR)/TestServer.hs | $(BINDIR)
 .PHONY: tests
 tests: int_tests e2e_tests api_tests
 
-int_tests: $(TESTDIR)/integration/TestSuite.hs test_server | $(BINDIR)
+int_tests: $(TESTDIR)/integration/TestSuite.hs | $(BINDIR)
 		@echo "Building integration tests"
+		@rm -rf *.tix .hpc/
 		ghc $< $(INCLUDES) -i$(TESTDIR)/integration $(GHC_OPTIONS) -o $(BINDIR)/tests
 		-$(BINDIR)/tests
 
@@ -41,4 +42,4 @@ $(OBJDIR) $(BINDIR):
 
 clean:
 		@echo "Cleaning..."
-		@sudo rm -rf state $(OBJDIR)
+		@sudo rm -rf state/ $(OBJDIR) .hpc/ *.tix
