@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 module Calculator.Data.AST (
-    AST(..)
+    AST(..),
+    astMap
 ) where
 
 import Data.Number.CReal
@@ -14,6 +15,14 @@ data AST = EqlStmt AST AST
            | Number CReal
            | Neg AST
            deriving (Eq, Generic)
+
+astMap :: (AST -> AST) -> AST -> AST
+astMap f (EqlStmt lhs rhs) = f $ EqlStmt (astMap f lhs) (astMap f rhs)
+astMap f (OpExpr op lhs rhs) = f $ OpExpr op (astMap f lhs) (astMap f rhs)
+astMap f (FuncExpr name ps) = f $ FuncExpr name (map (astMap f) ps)
+astMap f v@(Var _) = f v
+astMap f n@(Number _) = f n
+astMap f (Neg a) = f $ Neg (astMap f a)
 
 showArgs :: [AST] -> String
 showArgs [] = ""
