@@ -59,7 +59,7 @@ eval (EqlStmt (FuncExpr f parameters) e) = do
     put $ Env vars (Map.alter (\_ -> Just func) f funcs)
     return 0
 
-eval ast = error $ "Unexpected AST " ++ show ast
+eval ast = error $ "Unexpected expression " ++ show ast
 
 evalFunction :: Function -> [CReal] -> CReal
 evalFunction (Function p b) args =
@@ -81,5 +81,5 @@ operate op n1 n2 =
         "^" -> let sign = n1 / abs n1
                in sign * (abs n1 ** n2)
         "%" -> realMod n1 n2
-        o -> error $ "Unimplemented operator " ++ o
+        o -> error $ "Use of unsupported operator " ++ o
     where realMod a b = a - fromInteger (floor $ a/b) * b

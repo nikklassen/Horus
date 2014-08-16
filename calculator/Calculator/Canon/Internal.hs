@@ -8,7 +8,6 @@ import Calculator.Evaluator
 import Calculator.Data.AST
 import qualified Data.Map as Map
 import Data.Number.CReal
-import Debug.Trace
 
 -- show defaults to 40 decimal places, if there are less than this the
 -- answer is quaranteed to be exact.  To save on space, we want to make
@@ -91,7 +90,7 @@ canon (SubExpr lhs rhs) = case (canon lhs, canon rhs) of
 -- Any other operations
 canon (OpExpr op lhs rhs) = case (canon lhs, canon rhs) of
                                 (Number n1, Number n2) -> eval' op n1 n2
-                                (newLhs, newRhs) -> trace "Doing ma thing" $ OpExpr op newLhs newRhs
+                                (newLhs, newRhs) -> OpExpr op newLhs newRhs
 
 canon (EqlStmt rhs lhs) = EqlStmt rhs $ canon lhs
 

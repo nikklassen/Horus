@@ -12,7 +12,6 @@ import Data.ByteString.Char8 (unpack)
 import Happstack.Server hiding (body, result)
 import Control.Applicative (optional, (<$>))
 import qualified Control.Exception.Lifted as CEL
-import Debug.Trace (trace)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Data.Map (Map)
@@ -147,7 +146,7 @@ getUserId = do userId <- optional $ lookCookieValue "user-id"
 
 getReturnText :: String -> Map String CReal -> Map String Function -> IO (Either String Result)
 getReturnText input variables functions = CEL.catch (CEL.evaluate $!! result)
-                                                    (\e -> trace ("Caught error " ++ show (e :: CEL.ErrorCall)) $ return $ Left ("Invalid input" :: String))
+                                                    (\e -> return $ Left $ "Invalid input: " ++ show (e :: CEL.ErrorCall))
                                                     where result = Right $ calculate input variables functions
 
 jsonResponse :: Response -> Response

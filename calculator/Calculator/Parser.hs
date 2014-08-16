@@ -9,7 +9,9 @@ import Calculator.Parser.Helpers
 import Control.Applicative ((<$>), (*>), (<*))
 import Text.Parsec.Char(char, spaces, space)
 import Text.Parsec.Combinator (many1, choice, eof, sepBy)
+import Text.Parsec.Error (errorPos)
 import Text.Parsec.Expr
+import Text.Parsec.Pos (sourceColumn)
 import Text.Parsec.Prim ((<?>), (<|>), try)
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Prim as Parsec (parse)
@@ -67,5 +69,5 @@ term = do
 
 parse :: String -> AST
 parse s = case Parsec.parse statement "" s of
-            Left err -> error $ "ERROR: " ++ show err
+            Left err -> error $ " at position " ++ show (sourceColumn $ errorPos err)
             Right ts -> ts

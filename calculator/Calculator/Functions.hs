@@ -30,7 +30,7 @@ buildFunction parameters = Function (getNames parameters)
 getNames :: [AST] -> [String]
 getNames (Var name : vs) = name : getNames vs
 getNames [] = []
-getNames ast = error $ "Unexpected \"" ++ show ast ++ "\" in parameter list"
+getNames ast = error $ "Unexpected expression \"" ++ show ast ++ "\" in parameter list"
 
 isFunction :: String -> Bool
 isFunction f = Map.member f functions

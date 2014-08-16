@@ -1,6 +1,6 @@
 'use strict'
 
-var textToMathApp = angular.module('TextToMathApp', []);
+var textToMathApp = angular.module('TextToMathApp', ['ngSanitize'])
 
 textToMathApp.controller('TextToMathCtrl', function ($scope, $http) {
 
@@ -39,8 +39,19 @@ textToMathApp.controller('TextToMathCtrl', function ($scope, $http) {
             addToEnv(data)
             $scope.result = data.result
             $scope.resultClass = ''
-        }).error(function() {
-            $scope.result = 'Invalid expression'
+        }).error(function(data) {
+            $scope.result = data.error
+            var errPos = data.error.match(/position (\d+)/)
+            if (errPos !== null) {
+                var badStr = $scope.input.slice(0, errPos[1])
+                var len = badStr.length
+                if (len > 10) {
+                    $scope.result += '<br />...' + badStr.slice(len-10, len)
+                } else {
+                    $scope.result += badStr
+                }
+            }
+
             $scope.resultClass = 'error'
         })
     }
