@@ -4,9 +4,8 @@ module Calculator.Canon.Internal (
     canon
 ) where
 
-import Calculator.Evaluator
 import Calculator.Data.AST
-import qualified Data.Map as Map
+import Calculator.Evaluator.Helpers
 import Data.Number.CReal
 
 -- show defaults to 40 decimal places, if there are less than this the
@@ -92,20 +91,17 @@ canon (OpExpr op lhs rhs) = case (canon lhs, canon rhs) of
                                 (Number n1, Number n2) -> eval' op n1 n2
                                 (newLhs, newRhs) -> OpExpr op newLhs newRhs
 
-canon (EqlStmt rhs lhs) = EqlStmt rhs $ canon lhs
+canon (EqlStmt lhs rhs) = EqlStmt lhs $ canon rhs
+
+canon (BindStmt lhs rhs) = BindStmt lhs $ canon rhs
 
 canon (FuncExpr func args) = let newArgs = map canon args
-                                 newExpr = FuncExpr func newArgs
-                             in if all isNumber newArgs then
-                                    let ~(res, _) = evalPass newExpr Map.empty Map.empty
-                                    in if shouldFold res then Number res else newExpr
-                                    else
-                                        newExpr
-                             where isNumber (Number _) = True
-                                   isNumber _ = False
+                             in FuncExpr func newArgs
 
 canon (Neg e) = case canon e of
                    (Number n) -> Number $ negate n
                    a -> Neg a
 
-canon ast = ast
+-- Exhaustive matches (no ops)
+canon v@(Var _) = v
+canon n@(Number _) = n

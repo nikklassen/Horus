@@ -1,18 +1,15 @@
-module Calculator where
+module Calculator (
+    calculate,
+    module Calculator.Data.Result
+) where
 
+import Calculator.Data.Env
+import Calculator.Data.Result
 import Calculator.Evaluator
-import Calculator.Canon
-import Calculator.Functions
 import Calculator.Parser
-import Data.Number.CReal
-import Data.Map (Map)
+import qualified Data.Map as Map (map)
 
-data Result = Result {
-    answer :: CReal,
-    vars :: Map String CReal,
-    funcs :: Map String Function
-} deriving (Eq, Show)
-
-calculate :: String -> Map String CReal -> Map String Function -> Result
-calculate eq varMap funcMap = let (r, Env vs fs) = evalPass (canonPass $ parse eq) varMap funcMap
-                              in Result r vs fs
+calculate :: String -> Env -> Result
+calculate eq env = let (r, newEnv@(Env vs fs bs)) = evalPass (parse eq) env
+                       bsResults = Map.map (\e -> (fst (evalPass e newEnv), e)) bs
+                   in Result r vs fs bsResults

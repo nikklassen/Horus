@@ -57,9 +57,9 @@ tests = [ testCase "Number" number
             testCase "Can reduce" opReduce
             , testCase "Can't reduce" opNoReduce
             ]
-        , testGroup "canonPass" [
+        , testGroup "Stmts" [
             testCase "Eql" eqlReduce
-            , testCase "Not eql" astNoReduce
+            , testCase "Bind" bindReduce
             ]
         ]
 
@@ -71,7 +71,7 @@ negativeReduce = canon (Neg (Number 2)) @?= Number (-2)
 
 negativeNoReduce = canon (Neg (Var "a")) @?= Neg (Var "a")
 
-funcReduce = canon (FuncExpr "cos" [Number 0]) @?= Number 1
+funcReduce = canon (FuncExpr "cos" [OpExpr "+" (Number 1) (Number 1)]) @?= FuncExpr "cos" [Number 2]
 
 funcExprReduce = canon (EqlStmt (FuncExpr "f" [Var "a"]) (OpExpr "+" (Number 1) (Number 1)))
                      @?= EqlStmt (FuncExpr "f" [Var "a"]) (Number 2)
@@ -117,5 +117,4 @@ opNoReduce = canon opExpr @?= opExpr
 
 eqlReduce = canonPass (EqlStmt (Var "b") (OpExpr "+" (Number 2) (Number 3))) @?= EqlStmt (Var "b") (Number 5)
 
-astNoReduce = canonPass opExpr @?= opExpr
-              where opExpr = OpExpr "+" (Number 1) (Number 1)
+bindReduce = canonPass (BindStmt (Var "b") (OpExpr "+" (Number 2) (Number 3))) @?= BindStmt (Var "b") (Number 5)

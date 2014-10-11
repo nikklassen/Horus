@@ -11,3 +11,4 @@ cabal.*
 .virthualenv
 *.swp
 node_modules
+.hpc

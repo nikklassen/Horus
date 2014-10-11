@@ -7,7 +7,7 @@ module Calculator.Parser (
 import Calculator.Data.AST
 import Calculator.Parser.Helpers
 import Control.Applicative ((<$>), (*>), (<*))
-import Text.Parsec.Char(char, spaces, space)
+import Text.Parsec.Char(char, spaces, space, string)
 import Text.Parsec.Combinator (many1, choice, eof, sepBy)
 import Text.Parsec.Error (errorPos)
 import Text.Parsec.Expr
@@ -29,14 +29,25 @@ varOrFunction = do
         return $ FuncExpr f es
         <|> return (Var f)
 
+eqlStatement = do
+    lhs <- varOrFunction
+    spaces
+    _ <- char '='
+    spaces
+    rhs <- expr
+    return $ EqlStmt lhs rhs
+
+bindStatement = do
+    lhs <- identifier
+    spaces
+    _ <- string ":="
+    spaces
+    rhs <- expr
+    return $ BindStmt (Var lhs) rhs
+
 statement :: Parser AST
-statement = (try (do
-                lhs <- varOrFunction
-                spaces
-                _ <- char '='
-                spaces
-                rhs <- expr
-                return $ EqlStmt lhs rhs)
+statement = (try eqlStatement
+            <|> try bindStatement
             <|> expr) <* eof
             <?> "expr"
 
@@ -69,5 +80,5 @@ term = do
 
 parse :: String -> AST
 parse s = case Parsec.parse statement "" s of
-            Left err -> error $ " at position " ++ show (sourceColumn $ errorPos err)
+            Left err -> error $ "at position " ++ show (sourceColumn $ errorPos err)
             Right ts -> ts

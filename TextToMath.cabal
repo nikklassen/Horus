@@ -7,5 +7,31 @@ cabal-version:       >=1.10
 
 executable TextToMath
   main-is:             TextToMath
-  other-extensions:    OverloadedStrings, DoAndIfThenElse, TemplateHaskell, DeriveDataTypeable, TypeFamilies, PatternSynonyms, DeriveGeneric, ScopedTypeVariables
-  build-depends:       base, numbers, text, aeson, happstack-server, acid-state, bytestring, lifted-base, transformers, containers, system-uuid, deepseq, mtl, safecopy, test-framework-hunit, HUnit, testpack
+  other-extensions:    OverloadedStrings,
+                       DoAndIfThenElse,
+                       TemplateHaskell,
+                       DeriveDataTypeable,
+                       TypeFamilies,
+                       PatternSynonyms,
+                       DeriveGeneric,
+                       ScopedTypeVariables
+  build-depends:       base,
+                       numbers,
+                       text,
+                       aeson,
+                       happstack-server,
+                       acid-state,
+                       bytestring,
+                       lifted-base,
+                       transformers,
+                       containers,
+                       system-uuid,
+                       deepseq,
+                       mtl,
+                       safecopy,
+                       test-framework,
+                       test-framework-hunit,
+                       HUnit,
+                       testpack,
+                       parsec,
+                       deepseq-generics
