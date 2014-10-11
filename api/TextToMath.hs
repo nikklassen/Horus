@@ -167,5 +167,5 @@ jsonResponse :: [Aeson.Pair] -> Response
 jsonResponse = addHeader "Content-Type" "application/json" . toResponse . Aeson.encode . Aeson.object
 
 contentType :: String -> Request -> Bool
-contentType ct rq = ct == rqCt rq
+contentType ct rq = ct `isPrefixOf` rqCt rq
                     where rqCt r = Char8.unpack $ fromMaybe "" $ getHeader ("Content-Type" :: String) r
