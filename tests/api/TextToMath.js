@@ -18,10 +18,12 @@ describe('TextToMath Api', function() {
                         throw err
                     }
 
-                    var body = res.body
-                    expect(body.result).to.be('2.0')
-                    expect(body.vars).to.eql({})
-                    expect(body.funcs).to.eql({})
+                    expect(res.body).to.eql({
+                        vars: {},
+                        funcs: {},
+                        bound: {},
+                        result: 2.0
+                    })
 
                     done()
                 })
@@ -38,7 +40,10 @@ describe('TextToMath Api', function() {
                         throw err
                     }
 
-                    expect(res.body.error).to.be('Invalid input')
+                    // Error at equals sign
+                    expect(res.body).to.eql({
+                        error: 'Invalid input: at position 3'
+                    })
 
                     done()
                 })
@@ -55,10 +60,12 @@ describe('TextToMath Api', function() {
                         throw err
                     }
 
-                    var body = res.body
-                    expect(body.result).to.be('1.0')
-                    expect(body.vars).to.eql({ a: '1.0' })
-                    expect(body.funcs).to.eql({})
+                    expect(res.body).to.eql({
+                        vars: { a: '1.0' },
+                        funcs: {},
+                        bound: {},
+                        result: 1.0
+                    })
 
                     done()
                 })
@@ -75,10 +82,39 @@ describe('TextToMath Api', function() {
                         throw err
                     }
 
-                    var body = res.body
-                    expect(body.result).to.be('0.0')
-                    expect(body.vars).to.eql({})
-                    expect(body.funcs).to.eql({ a: '(x) = (1.0 + x)' })
+                    expect(res.body).to.eql({
+                        vars: {},
+                        funcs: { a: '(x) = (1.0 + x)' },
+                        bound: {},
+                        result: 0.0
+                    })
+
+                    done()
+                })
+        })
+
+        it('should return a bound variable', function(done) {
+
+            request('localhost')
+                .post('/api/calculate')
+                .send({ input: 'a := 3' })
+                .expect(200)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    expect(res.body).to.eql({
+                        result: 3.0,
+                        vars: {},
+                        funcs: {},
+                        bound: {
+                            a: {
+                                expr: '3.0',
+                                value: 3.0
+                            }
+                        }
+                    })
 
                     done()
                 })
@@ -88,12 +124,14 @@ describe('TextToMath Api', function() {
 
     // Test server data
     // User name: testUser
-    // Vars:			a = 2.0
+    // Vars:      a = 2.0
     // Functions: a(x) = 2.0 + x
+    // Bound:     y := a
     //
     // User name: testUser2
-    // Vars:			b = 3.0
+    // Vars:      b = 3.0
     // Functions: b(x) = 3.0 + x
+    // Bound:     z := b
     describe('UserInfo', function() {
 
         it('should return userInfo', function(done) {
@@ -107,9 +145,16 @@ describe('TextToMath Api', function() {
                         throw err
                     }
 
-                    var body = res.body
-                    expect(body.vars).to.eql({ a: '2.0' })
-                    expect(body.funcs).to.eql({ a: '(x) = (2.0 + x)' })
+                    expect(res.body).to.eql({
+                        vars: { a: '2.0' },
+                        funcs: { a: '(x) = (2.0 + x)' },
+                        bound: {
+                            y: {
+                                expr: 'a',
+                                value: 2.0
+                            }
+                        }
+                    })
 
                     done()
                 })
@@ -189,11 +234,17 @@ describe('TextToMath Api', function() {
 
         it('should delete the saved information', function(done) {
 
+            var operations = [
+                { op: 'remove', path: '/vars/b' },
+                { op: 'remove', path: '/funcs/b' },
+                { op: 'remove', path: '/bound/z' }
+            ]
+
             request('localhost')
                 .post('/api/userInfo')
                 .set('Cookie', 'user-id=testUser2')
                 .set('Content-Type', 'application/json-patch+json')
-                .send('[{ "op": "remove", "path": "/vars/b" }, { "op": "remove", "path": "/funcs/b" }]')
+                .send(JSON.stringify(operations))
                 .expect(200)
                 .end(function(err) {
                     if (err) {
@@ -209,10 +260,11 @@ describe('TextToMath Api', function() {
                                 throw err
                             }
 
-                            var body = res.body
-
-                            expect(body.vars).to.eql({})
-                            expect(body.funcs).to.eql({})
+                            expect(res.body).to.eql({
+                                vars: {},
+                                funcs: {},
+                                bound: {},
+                            })
 
                             done()
                         })

@@ -10,14 +10,15 @@ import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 import Data.Acid
 import Data.Map (Map)
-import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Number.CReal
 import Data.SafeCopy
 import Data.Typeable
+import qualified Data.Map as Map
 
-data User = User { getVars :: Map String String
+data User = User { getVars :: Map String CReal
                  , getFuncs :: Map String Function
+                 , getBound :: Map String AST
                  } deriving (Show, Typeable)
 
 data UserDb = UserDb { allUsers :: Map String User
@@ -26,12 +27,14 @@ data UserDb = UserDb { allUsers :: Map String User
 emptyState :: UserDb
 emptyState = UserDb Map.empty
 
+newUser :: User
+newUser = User Map.empty Map.empty Map.empty
+
 getUser :: String -> Query UserDb User
 getUser userId = do
     db <- ask
     let maybeUser = Map.lookup userId $ allUsers db
-    return $ fromMaybe emptyUser maybeUser
-    where emptyUser = User Map.empty Map.empty
+    return $ fromMaybe newUser maybeUser
 
 setUser :: String -> User -> Update UserDb ()
 setUser userId user = modify go

@@ -6,6 +6,22 @@ chai.use(chaiAsPromised)
 var expect = chai.expect
 var assert = chai.assert
 
+var Definition = function(type, name) {
+    var id = '/' + type + '/' + name
+    this._element = element(by.id(id))
+    this.name = this._element.element(by.binding('v.name'))
+    this.value = this._element.element(by.binding('v.value'))
+}
+
+Definition.prototype = {
+    element: function(locator) {
+        return this._element.element(locator)
+    },
+    isPresent: function() {
+        return this._element.isPresent()
+    }
+}
+
 var Homepage = function() {
 
     this.input = element(by.model('input'))
@@ -13,38 +29,47 @@ var Homepage = function() {
     this.submitBtn = element(by.id('submit'))
     this.resetBtn = element(by.id('reset'))
 
-    this.get = function() {
+}
+
+Homepage.prototype = {
+    get: function() {
         browser.get('http://localhost')
-    }
+    },
 
-    this.setInput = function(data) {
+    setInput: function(data) {
         this.input.sendKeys(data)
-    }
+    },
 
-    this.calculate = function() {
+    calculate: function() {
         this.submitBtn.click()
-    }
+    },
 
-    this.reset = function() {
+    reset: function() {
         this.resetBtn.click()
+    },
+
+    getDefinition: function(type, name) {
+        return new Definition(type, name)
     }
 }
 
 // Test server data
 // User name: testUser
-// Vars:			a = 2.0
+// Vars:      a = 2.0
 // Functions: a(x) = 2.0 + x
+// Bound:     y := a
 //
 // User name: testUser2
-// Vars:			b = 3.0
+// Vars:      b = 3.0
 // Functions: b(x) = 3.0 + x
+// Bound:     z := b
 describe('homepage', function () {
 
     beforeEach(function() {
         var ptor = protractor.getInstance()
         browser.get('/')
         ptor.manage().addCookie('user-id', 'testUser')
-    })
+    }, 10000)
 
     it('should calculate 1 + 1', function() {
 
@@ -67,7 +92,7 @@ describe('homepage', function () {
 
         homepage.calculate()
 
-        expect(homepage.result.getText()).to.eventually.equal('Invalid expression')
+        expect(homepage.result.getText()).to.eventually.equal('Invalid input: at position 3\n1 =')
         expect(homepage.result.getAttribute('class')).to.eventually.contain('error')
     })
 
@@ -75,24 +100,33 @@ describe('homepage', function () {
         var homepage = new Homepage()
         homepage.get()
 
-        var rowBy = by.repeater('v in env.vars').row(0)
+        var v = homepage.getDefinition('vars', 'a')
+        assert.eventually.equal(v.isPresent(), true)
 
-        assert.eventually.equal(element.all(by.repeater('v in env.vars')).count(), 1)
-
-        expect(element(rowBy.column('v.name')).getText()).to.eventually.equal('a')
-        expect(element(rowBy.column('v.value')).getText()).to.eventually.equal('2.0')
+        expect(v.name.getText()).to.eventually.equal('a')
+        expect(v.value.getText()).to.eventually.equal('2.0')
     })
 
     it('should have existing functions', function() {
         var homepage = new Homepage()
         homepage.get()
 
-        var rowBy = by.repeater('v in env.funcs').row(0)
+        var f = homepage.getDefinition('funcs', 'a')
+        assert.eventually.equal(f.isPresent(), true)
 
-        assert.eventually.equal(element.all(by.repeater('v in env.funcs')).count(), 1)
+        expect(f.name.getText()).to.eventually.equal('a(x)')
+        expect(f.value.getText()).to.eventually.equal('(2.0 + x)')
+    })
 
-        expect(element(rowBy.column('getFuncName(v)')).getText()).to.eventually.equal('a(x)')
-        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(2.0 + x)')
+    it('should have existing bound variables', function() {
+        var homepage = new Homepage()
+        homepage.get()
+
+        var b = homepage.getDefinition('bound', 'y')
+        assert.eventually.equal(b.isPresent(), true)
+
+        expect(b.name.getText()).to.eventually.equal('y')
+        expect(b.value.getText()).to.eventually.equal('2.0 = a')
     })
 
     it('should replace existing variable', function() {
@@ -103,85 +137,33 @@ describe('homepage', function () {
         homepage.setInput('a = 4')
         homepage.calculate()
 
-        var rowBy = by.repeater('v in env.vars').row(0)
-
-        expect(element(rowBy.column('v.name')).getText()).to.eventually.equal('a')
-        expect(element(rowBy.column('v.value')).getText()).to.eventually.equal('4.0')
-        expect(element.all(by.repeater('v in env.vars')).count()).to.eventually.equal(1)
-    })
-
-    it('should replace existing function', function() {
-        var homepage = new Homepage()
-        homepage.get()
-
-        homepage.setInput('a(y) = y + 3')
-        homepage.calculate()
-
-        var rowBy = by.repeater('v in env.funcs').row(0)
-
-        expect(element(rowBy.column('getFuncName(v)')).getText()).to.eventually.equal('a(y)')
-        expect(element(rowBy.column('getFuncValue(v)')).getText()).to.eventually.equal('(3.0 + y)')
-        expect(element.all(by.repeater('v in env.funcs')).count()).to.eventually.equal(1)
-    })
-
-    it('should add a variable', function() {
-        var homepage = new Homepage()
-        homepage.get()
-
-        homepage.setInput('z = 2')
-
-        homepage.calculate()
-
-        var varBy = by.repeater('v in env.vars')
-
-        assert.eventually.equal(element.all(varBy).count(), 2)
-        expect(element(varBy.row(1).column('v.name')).getText()).to.eventually.equal('z')
-        expect(element(varBy.row(1).column('v.value')).getText()).to.eventually.equal('2.0')
-        expect(homepage.result.getText()).to.eventually.equal('2.0')
-    })
-
-    it('should delete a variable', function() {
-        var homepage = new Homepage()
-        homepage.get()
-
-        var varBy = by.repeater('v in env.vars')
-
-        assert.eventually.equal(element.all(varBy).count(), 2)
-
-        // Click the 'X' button
-        element(varBy.row(0)).element(by.css('span')).click()
-
-        expect(element.all(varBy).count()).to.eventually.equal(1)
+        var v = homepage.getDefinition('vars', 'a')
+        expect(v.value.getText()).to.eventually.equal('4.0')
     })
 
     it('should add a function', function() {
         var homepage = new Homepage()
         homepage.get()
 
-        homepage.setInput('z(x) = x * 2')
-
+        homepage.setInput('q(r) = 3 * r')
         homepage.calculate()
 
-        var funcBy = by.repeater('v in env.funcs')
+        var f = homepage.getDefinition('funcs', 'q')
+        assert.eventually.equal(f.isPresent(), true)
 
-        assert.eventually.equal(element.all(funcBy).count(), 2)
-        expect(element(funcBy.row(1).column('getFuncName(v)')).getText()).to.eventually.equal('z(x)')
-        expect(element(funcBy.row(1).column('getFuncValue(v)')).getText()).to.eventually.equal('(2.0 * x)')
-        expect(homepage.result.getText()).to.eventually.equal('0.0')
+        expect(f.name.getText()).to.eventually.equal('q(r)')
+        expect(f.value.getText()).to.eventually.equal('(3.0 * r)')
     })
 
-    it('should delete the function', function() {
+    it('should delete a bound variable', function() {
         var homepage = new Homepage()
         homepage.get()
 
-        var funcBy = by.repeater('v in env.funcs')
-
-        assert.eventually.equal(element.all(funcBy).count(), 2)
+        var b = homepage.getDefinition('bound', 'y')
 
         // Click the 'X' button
-        element(funcBy.row(0)).element(by.css('span')).click()
-
-        expect(element.all(funcBy.row(0)).count()).to.eventually.equal(1)
+        b.element(by.css('span')).click()
+        assert.eventually.equal(b.isPresent(), false)
     })
 
     it('should reset the user\'s environment', function() {
@@ -191,12 +173,10 @@ describe('homepage', function () {
         var homepage = new Homepage()
         homepage.get()
 
-        assert.eventually.equal(element.all(by.repeater('v in env.vars')).count(), 1)
-        assert.eventually.equal(element.all(by.repeater('v in env.funcs')).count(), 1)
+        assert.eventually.notEqual(element.all(by.repeater('v in env')).count(), 0)
 
         homepage.reset()
 
-        expect(element.all(by.repeater('v in env.vars')).count()).to.eventually.equal(0)
-        expect(element.all(by.repeater('v in env.funcs')).count()).to.eventually.equal(0)
+        expect(element.all(by.repeater('v in env')).count()).to.eventually.equal(0)
     })
 })

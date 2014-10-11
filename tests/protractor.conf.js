@@ -1,6 +1,4 @@
 exports.config = {
-    allScriptsTimeout: 11000,
-
     specs: [
         'e2e/*.js'
     ],
@@ -16,6 +14,8 @@ exports.config = {
     framework: 'mocha',
 
     mochaOpts: {
-        reporter: 'spec'
+        reporter: 'spec',
+        timeout: 11000,
+        slow: 2000
     }
 }

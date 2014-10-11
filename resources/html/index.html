@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="/css/homepage.css" />
 <script src="/js/lib/angular.min.js"></script>
 <script src="/js/lib/angular-sanitize.min.js"></script>
+<script src="/js/lib/lodash.min.js"></script>
 <script src="/js/app.js"></script>
 </head>
 <body>
@@ -39,23 +40,12 @@
                         <th>Value</th>
                     </tr>
                 </thead>
-                <tr ng-repeat="v in env.vars | orderBy : 'name'">
+                <tr ng-repeat="v in env | objectToArray | orderBy: 'name'" id="{{v.id}}">
                     <td>
                         {{v.name}}
                     </td>
                     <td>
                         {{v.value}}
-                        <a ng-click="remove(v)">
-                            <span class="glyphicon glyphicon-remove"></span>
-                        </a>
-                    </td>
-                </tr>
-                <tr ng-repeat="v in env.funcs | orderBy : 'name'">
-                    <td>
-                        {{getFuncName(v)}}
-                    </td>
-                    <td>
-                        {{getFuncValue(v)}}
                         <a ng-click="remove(v)">
                             <span class="glyphicon glyphicon-remove"></span>
                         </a>

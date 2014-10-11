@@ -2,15 +2,15 @@
 
 module Main where
 
-import TextToMath
-import Calculator.Functions (Function(..))
 import Calculator.Data.AST (AST(..))
-import qualified Data.Map as Map (fromList)
-import Happstack.Server
-import Data.Acid
-import UserState
+import Calculator.Functions (Function(..))
 import Control.Exception
+import Data.Acid
 import Data.Acid.Memory
+import Happstack.Server
+import TextToMath
+import UserState
+import qualified Data.Map as Map (fromList)
 
 config :: Conf
 config = Conf { port        = 3000
@@ -30,11 +30,13 @@ main = bracket (openMemoryState testState)
 testState :: UserDb
 testState = UserDb $ Map.fromList
                 [ ("testUser", User
-                    (Map.fromList [("a", "2.0")])
-                    (Map.fromList [("a", a)]))
+                    (Map.fromList [("a", 2)])
+                    (Map.fromList [("a", a)])
+                    (Map.fromList [("y", Var "a")]))
                 , ("testUser2", User
-                    (Map.fromList [("b", "3.0")])
-                    (Map.fromList [("b", b)]))
+                    (Map.fromList [("b", 3)])
+                    (Map.fromList [("b", b)])
+                    (Map.fromList [("z", Var "b")]))
                 ]
             where a = Function ["x"] (OpExpr "+" (Number 2) (Var "x"))
                   b = Function ["x"] (OpExpr "+" (Number 3) (Var "x"))

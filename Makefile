@@ -4,7 +4,7 @@ LIBDIR = calculator
 APIDIR = api
 TESTDIR = tests
 
-GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fllvm -fhpc
+GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fhpc -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d/
 INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
