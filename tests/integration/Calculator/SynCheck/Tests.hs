@@ -20,13 +20,11 @@ tests = [ testCase "Duplicate parameter" dupParam
         , testCase "Non-var parameter" nonVarParam
         , testCase "Undefined parameter" undefParam
         , testCase "Valid func def" validFuncDef
-        , testCase "Redefine bound var as regular var" redefBound
-        , testCase "Redefine regular var as bound var" redefVar
         , testCase "Recursive definition of bound var" recursiveBind
         , testCase "No op" noop
         ]
 
-emptyEnv = Env Map.empty Map.empty Map.empty
+emptyEnv = Env Map.empty Map.empty
 
 dupParam = assertRaises "" (ErrorCall "Duplicate parameter a")
                            (CEL.evaluate $!! synCheck (EqlStmt (FuncExpr "f" [Var "a", Var "a"]) (Number 1)) emptyEnv)
@@ -40,20 +38,10 @@ undefParam = assertRaises "" (ErrorCall "Use of undefined parameter b")
 validFuncDef = synCheck eqlStmt emptyEnv @?= eqlStmt
                where eqlStmt = EqlStmt (FuncExpr "f" [Var "a"]) (Var "a")
 
-redefBound = assertRaises "" (ErrorCall "Redefinition of bound variable a")
-                             (CEL.evaluate $!! synCheck stmt env)
-                             where stmt = EqlStmt (Var "a") (Number 2)
-                                   env = Env Map.empty Map.empty $ Map.fromList [("a", Var "b")]
-
-redefVar = assertRaises "" (ErrorCall "Redefinition of variable a")
-                           (CEL.evaluate $!! synCheck stmt env)
-                           where stmt = BindStmt (Var "a") (Var "b")
-                                 env = Env (Map.fromList [("a", 3)]) Map.empty Map.empty
-
 recursiveBind = assertRaises "" (ErrorCall "Recursive use of bound variable a")
                                 (CEL.evaluate $!! synCheck stmt env)
                                 where stmt = BindStmt (Var "a") (OpExpr "+" (Var "b") (Number 2))
-                                      env = Env Map.empty Map.empty $ Map.fromList [("b", Var "a")]
+                                      env = Env (Map.fromList [("b", Var "a")]) Map.empty
 
 noop = synCheck expr emptyEnv @?= expr
        where expr = OpExpr "+" (Number 2) (Number 2)

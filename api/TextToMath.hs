@@ -6,6 +6,7 @@ module TextToMath (
 
 import Calculator
 import Calculator.Data.Env
+import Calculator.Data.AST
 import Calculator.DeepSeq()
 import Control.Applicative (optional, (<$>))
 import Control.DeepSeq (($!!))
@@ -17,6 +18,7 @@ import Data.Aeson ((.=))
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
+import Data.Number.CReal
 import Happstack.Server hiding (body, result)
 import Serializer()
 import System.UUID.V4 (uuid)
@@ -45,9 +47,8 @@ calc acid = do
                 Just b -> do
                     let input = fromMaybe "" $ Map.lookup "input" b
                     userId <- getUserId
-                    User variables functions bound <- query' acid (UserState.GetUser userId)
-                    --let crealVars = Map.map read variables
-                    result <- liftIO $ getReturnText input $ Env variables functions bound
+                    User variables functions <- query' acid (UserState.GetUser userId)
+                    result <- liftIO $ getReturnText input $ Env variables functions
                     addCookie Session $ mkCookie "user-id" userId
                     case result of
                         Left err -> do
@@ -55,41 +56,38 @@ calc acid = do
                             badRequest res
                         Right ans -> do let newVars = vars ans
                                         let newFuncs = funcs ans
-                                        let newBound = boundVars ans
-                                        update' acid (UserState.SetUser userId $ User newVars newFuncs $ Map.map snd newBound) -- (Map.map show newVars) newFuncs)
-                                        let addedVars = Map.differenceWith takeFirst newVars variables -- crealVars
+                                        update' acid (UserState.SetUser userId $ User newVars newFuncs)
                                         let addedFuncs = Map.differenceWith takeFirst newFuncs functions
-                                        let res = jsonResponse $ makeJSON addedVars addedFuncs (Map.map boundToJSON newBound) $ "result" .= answer ans
+                                        let res = jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans) addedFuncs $ "result" .= answer ans
                                         ok res 
                 Nothing -> badRequest $ toResponse ("Unable to parse body" :: String)
         else resp 415 $ toResponse ("Content type must be application/json" :: String)
         where takeFirst a b = if a /= b then Just a else Nothing
-              makeJSON vs fs bvs res = [ "vars" .= vs
-                                       , "funcs" .= fs
-                                       , "bound" .= bvs
-                                       , res
-                                       ]
+              makeJSON vs fs res = [ "vars" .= vs
+                                   , "funcs" .= fs
+                                   , res
+                                   ]
 
 getUserInfo :: AcidState UserDb -> ServerPart Response
 getUserInfo acid = do
     method GET
     userId <- getUserId
-    User variables functions bound <- query' acid (UserState.GetUser userId)
+    User variables functions <- query' acid (UserState.GetUser userId)
     addCookie Session $ mkCookie "user-id" userId
 
     -- no op calculation to force bound vars to get calculed
-    result <- liftIO $ getReturnText "0" (Env variables functions bound)
+    result <- liftIO $ getReturnText "0" (Env variables functions)
     case result of
         Left err -> ok $ jsonResponse [ "error" .= err ]
-        Right ans -> ok $ jsonResponse [ "vars" .= vars ans
+        Right ans -> ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON (boundResults ans)) (vars ans)
                                        , "funcs" .= funcs ans
-                                       , "bound" .= Map.map boundToJSON (boundVars ans)
                                        ]
     
-boundToJSON :: (Show a, Show b) => (a, b) -> Aeson.Value
-boundToJSON v = Aeson.object [ "value" .= show (fst v)
-                             , "expr" .= show (snd v)
-                             ]
+varsToJSON :: Map String CReal -> String -> AST -> Aeson.Value
+varsToJSON _ _ (Number n) = Aeson.object [ "value" .= n ]
+varsToJSON bound v expr =  Aeson.object [ "value" .= (bound Map.! v)
+                                        , "expr" .= show expr
+                                        ]
 
 resetUserInfo :: AcidState UserDb -> ServerPart Response
 resetUserInfo acid = do
@@ -126,25 +124,19 @@ modifyUserInfo acid = do
                             Nothing -> False
 
 runAction :: Maybe User -> Map String String -> Maybe User
-runAction (Just (User vs fs bvs)) action
+runAction (Just (User vs fs)) action
     | Map.size action == 2 =
         case Map.lookup "path" action of
             Just p  | "/vars/" `isPrefixOf` p ->
                         let Just varName = stripPrefix "/vars/" p
                         in if Map.member varName vs then
-                            Just $ User (Map.delete varName vs) fs bvs
+                            Just $ User (Map.delete varName vs) fs
                         else
                             Nothing
                     | "/funcs/" `isPrefixOf` p ->
                         let Just funcName = stripPrefix "/funcs/" p
                         in if Map.member funcName fs then
-                            Just $ User vs (Map.delete funcName fs) bvs
-                        else
-                            Nothing
-                    | "/bound/" `isPrefixOf` p ->
-                        let Just varName = stripPrefix "/bound/" p
-                        in if Map.member varName bvs then
-                            Just $ User vs fs $ Map.delete varName bvs
+                            Just $ User vs $ Map.delete funcName fs
                         else
                             Nothing
                     | otherwise -> Nothing

@@ -30,13 +30,11 @@ main = bracket (openMemoryState testState)
 testState :: UserDb
 testState = UserDb $ Map.fromList
                 [ ("testUser", User
-                    (Map.fromList [("a", 2)])
-                    (Map.fromList [("a", a)])
-                    (Map.fromList [("y", Var "a")]))
+                    (Map.fromList [("a", Number 2), ("y", Var "a")])
+                    (Map.fromList [("a", a)]))
                 , ("testUser2", User
-                    (Map.fromList [("b", 3)])
-                    (Map.fromList [("b", b)])
-                    (Map.fromList [("z", Var "b")]))
+                    (Map.fromList [("b", Number 3), ("z", Var "b")])
+                    (Map.fromList [("b", b)]))
                 ]
             where a = Function ["x"] (OpExpr "+" (Number 2) (Var "x"))
                   b = Function ["x"] (OpExpr "+" (Number 3) (Var "x"))

@@ -16,9 +16,8 @@ import Data.SafeCopy
 import Data.Typeable
 import qualified Data.Map as Map
 
-data User = User { getVars :: Map String CReal
+data User = User { getVars :: Map String AST
                  , getFuncs :: Map String Function
-                 , getBound :: Map String AST
                  } deriving (Show, Typeable)
 
 data UserDb = UserDb { allUsers :: Map String User
@@ -28,7 +27,7 @@ emptyState :: UserDb
 emptyState = UserDb Map.empty
 
 newUser :: User
-newUser = User Map.empty Map.empty Map.empty
+newUser = User Map.empty Map.empty
 
 getUser :: String -> Query UserDb User
 getUser userId = do

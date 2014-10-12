@@ -9,7 +9,7 @@ import Data.Number.CReal
 
 data Result = Result {
     answer :: CReal,
-    vars :: Map String CReal,
+    vars :: Map String AST,
     funcs :: Map String Function,
-    boundVars :: Map String (CReal, AST)
+    boundResults :: Map String CReal
 } deriving (Eq, Show)

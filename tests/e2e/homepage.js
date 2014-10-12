@@ -122,11 +122,11 @@ describe('homepage', function () {
         var homepage = new Homepage()
         homepage.get()
 
-        var b = homepage.getDefinition('bound', 'y')
-        assert.eventually.equal(b.isPresent(), true)
+        var v = homepage.getDefinition('vars', 'y')
+        assert.eventually.equal(v.isPresent(), true)
 
-        expect(b.name.getText()).to.eventually.equal('y')
-        expect(b.value.getText()).to.eventually.equal('2.0 = a')
+        expect(v.name.getText()).to.eventually.equal('y')
+        expect(v.value.getText()).to.eventually.equal('2.0 = a')
     })
 
     it('should replace existing variable', function() {
@@ -159,11 +159,11 @@ describe('homepage', function () {
         var homepage = new Homepage()
         homepage.get()
 
-        var b = homepage.getDefinition('bound', 'y')
+        var v = homepage.getDefinition('vars', 'y')
 
         // Click the 'X' button
-        b.element(by.css('span')).click()
-        assert.eventually.equal(b.isPresent(), false)
+        v.element(by.css('span')).click()
+        assert.eventually.equal(v.isPresent(), false)
     })
 
     it('should reset the user\'s environment', function() {

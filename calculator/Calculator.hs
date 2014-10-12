@@ -3,13 +3,20 @@ module Calculator (
     module Calculator.Data.Result
 ) where
 
+import Calculator.Data.AST
+import Data.Number.CReal
 import Calculator.Data.Env
 import Calculator.Data.Result
 import Calculator.Evaluator
 import Calculator.Parser
-import qualified Data.Map as Map (map)
+import Data.Map (Map)
+import qualified Data.Map as Map (insert, mapAccumWithKey, empty)
 
 calculate :: String -> Env -> Result
-calculate eq env = let (r, newEnv@(Env vs fs bs)) = evalPass (parse eq) env
-                       bsResults = Map.map (\e -> (fst (evalPass e newEnv), e)) bs
-                   in Result r vs fs bsResults
+calculate eq env = let (r, newEnv@(Env vs fs)) = evalPass (parse eq) env
+                       bound = fst $ Map.mapAccumWithKey (evalBound newEnv) Map.empty vs
+                   in Result r vs fs bound
+
+evalBound :: Env -> Map String CReal -> String -> AST -> (Map String CReal, AST)
+evalBound _ a _ n@(Number _) = (a, n)
+evalBound env a v ast = (Map.insert v (fst $ evalPass ast env) a, ast)

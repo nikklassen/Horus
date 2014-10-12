@@ -9,17 +9,21 @@
         $scope.resultClass = ''
 
         function formatForDisplay(obj, type) {
-            var displayName = obj.name,
-                displayValue = obj.value
+            var displayName, displayValue
 
             switch (type) {
                 case 'funcs':
                     var sides = (obj.name + obj.value).split('=')
                     displayName = sides[0].trim()
                     displayValue = sides[1].trim()
-                    break;
-                case 'bound':
-                    displayValue = obj.value.value + ' = ' + obj.value.expr
+                    break
+                case 'vars':
+                    displayName = obj.name
+                    displayValue = obj.value.value
+                    if (obj.value.expr !== undefined) {
+                         displayValue += ' = ' + obj.value.expr
+                    }
+                    break
             }
             obj.name = displayName
             obj.value = displayValue
@@ -56,7 +60,7 @@
                 if (errPos !== null) {
                     var badStr = $scope.input.slice(0, errPos[1])
                     var len = badStr.length
-                    $scope.result += '<br />';
+                    $scope.result += '<br />'
                     if (len > 10) {
                         $scope.result += '... ' + badStr.slice(len-10, len)
                     } else {

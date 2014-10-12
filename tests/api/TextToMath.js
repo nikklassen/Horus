@@ -3,6 +3,16 @@
 var expect = require('expect.js')
 var request = require('supertest')
 
+// Test server data
+// User name: testUser
+// Vars:      a = 2.0,
+//            y := a
+// Functions: a(x) = 2.0 + x
+//
+// User name: testUser2
+// Vars:      b = 3.0
+//            z := b
+// Functions: b(x) = 3.0 + x
 describe('TextToMath Api', function() {
 
     describe('Calculate', function() {
@@ -21,8 +31,7 @@ describe('TextToMath Api', function() {
                     expect(res.body).to.eql({
                         vars: {},
                         funcs: {},
-                        bound: {},
-                        result: 2.0
+                        result: 2
                     })
 
                     done()
@@ -61,9 +70,12 @@ describe('TextToMath Api', function() {
                     }
 
                     expect(res.body).to.eql({
-                        vars: { a: '1.0' },
+                        vars: {
+                            a: {
+                                value: 1
+                            }
+                        },
                         funcs: {},
-                        bound: {},
                         result: 1.0
                     })
 
@@ -85,7 +97,6 @@ describe('TextToMath Api', function() {
                     expect(res.body).to.eql({
                         vars: {},
                         funcs: { a: '(x) = (1.0 + x)' },
-                        bound: {},
                         result: 0.0
                     })
 
@@ -97,7 +108,8 @@ describe('TextToMath Api', function() {
 
             request('localhost')
                 .post('/api/calculate')
-                .send({ input: 'a := 3' })
+                .set('Cookie', 'user-id=testUser2')
+                .send({ input: 'y := 4 * b' })
                 .expect(200)
                 .end(function(err, res) {
                     if (err) {
@@ -105,15 +117,21 @@ describe('TextToMath Api', function() {
                     }
 
                     expect(res.body).to.eql({
-                        result: 3.0,
-                        vars: {},
-                        funcs: {},
-                        bound: {
-                            a: {
-                                expr: '3.0',
-                                value: 3.0
+                        result: 12,
+                        vars: {
+                            b: {
+                                value: 3
+                            },
+                            y: {
+                                expr: '(4.0 * b)',
+                                value: 12
+                            },
+                            z: {
+                                expr: 'b',
+                                value: 3
                             }
-                        }
+                        },
+                        funcs: {}
                     })
 
                     done()
@@ -122,16 +140,6 @@ describe('TextToMath Api', function() {
 
     })
 
-    // Test server data
-    // User name: testUser
-    // Vars:      a = 2.0
-    // Functions: a(x) = 2.0 + x
-    // Bound:     y := a
-    //
-    // User name: testUser2
-    // Vars:      b = 3.0
-    // Functions: b(x) = 3.0 + x
-    // Bound:     z := b
     describe('UserInfo', function() {
 
         it('should return userInfo', function(done) {
@@ -146,14 +154,16 @@ describe('TextToMath Api', function() {
                     }
 
                     expect(res.body).to.eql({
-                        vars: { a: '2.0' },
-                        funcs: { a: '(x) = (2.0 + x)' },
-                        bound: {
+                        vars: {
+                            a: {
+                                value: 2
+                            },
                             y: {
                                 expr: 'a',
-                                value: 2.0
+                                value: 2
                             }
-                        }
+                        },
+                        funcs: { a: '(x) = (2.0 + x)' }
                     })
 
                     done()
@@ -235,9 +245,9 @@ describe('TextToMath Api', function() {
         it('should delete the saved information', function(done) {
 
             var operations = [
-                { op: 'remove', path: '/vars/b' },
+                { op: 'remove', path: '/vars/y' },
+                { op: 'remove', path: '/vars/z' },
                 { op: 'remove', path: '/funcs/b' },
-                { op: 'remove', path: '/bound/z' }
             ]
 
             request('localhost')
@@ -261,9 +271,12 @@ describe('TextToMath Api', function() {
                             }
 
                             expect(res.body).to.eql({
-                                vars: {},
-                                funcs: {},
-                                bound: {},
+                                vars: {
+                                    b: {
+                                        value: 3
+                                    }
+                                },
+                                funcs: {}
                             })
 
                             done()
