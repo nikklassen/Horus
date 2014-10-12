@@ -20,7 +20,7 @@ evalPass' :: AST -> EnvState CReal
 evalPass' ast@(EqlStmt (Var var) e) = do
     !_ <- gets $ synCheckPass ast
     val <- eval e
-    modify $ alterVars (\_ -> Just val) var
+    modify $ alterVars (\_ -> Just $ Number val) var
     return val
 
 evalPass' ast@(EqlStmt (FuncExpr f parameters) e) = do
@@ -29,10 +29,10 @@ evalPass' ast@(EqlStmt (FuncExpr f parameters) e) = do
     modify $ alterFuncs (\_ -> Just func) f
     return 0
 
-evalPass' ast@(BindStmt (Var iden) e) = do
+evalPass' ast@(BindStmt (Var var) e) = do
     !_ <- gets $ synCheckPass ast
     let rhs = canonPass e
-    modify $ alterBound (\_ -> Just rhs) iden
+    modify $ alterVars (\_ -> Just rhs) var
     eval rhs
 
 evalPass' ast = eval ast

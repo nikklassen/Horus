@@ -44,13 +44,13 @@ tests = [ testGroup "Simple"
         ]
 
 process :: AST -> CReal
-process ast = fst $ evalPass ast $ Env Map.empty Map.empty Map.empty
+process ast = fst $ evalPass ast $ Env Map.empty Map.empty
 
-processVars :: AST -> Map String CReal -> (CReal, Env)
-processVars ast vars = evalPass ast $ Env vars Map.empty Map.empty
+processVars :: AST -> Map String AST -> (CReal, Env)
+processVars ast vars = evalPass ast $ Env vars Map.empty
 
 processFuncs :: AST -> Map String Function -> (CReal, Env)
-processFuncs ast funcs = evalPass ast $ Env Map.empty funcs Map.empty
+processFuncs ast funcs = evalPass ast $ Env Map.empty funcs
 
 int = process (Number 0123456789876543210) @?= 123456789876543210
 
@@ -73,23 +73,22 @@ neg = process (Neg (Number 2)) @?= -2
 
 function = process (FuncExpr "sin" [Number 1]) @?= sin 1
 
-userFunction = processFuncs (FuncExpr "foo" [Number 2]) fooFunc @?= (4, Env Map.empty fooFunc Map.empty)
+userFunction = processFuncs (FuncExpr "foo" [Number 2]) fooFunc @?= (4, Env Map.empty fooFunc)
                where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Var "b") (Number 2)))]
 
-functionDef = processFuncs (EqlStmt (FuncExpr "foo" [Var "b"]) (OpExpr "+" (Var "b") (Number 2))) Map.empty @?= (0, Env Map.empty fooFunc Map.empty)
+functionDef = processFuncs (EqlStmt (FuncExpr "foo" [Var "b"]) (OpExpr "+" (Var "b") (Number 2))) Map.empty @?= (0, Env Map.empty fooFunc)
               where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Number 2) (Var "b")))]
 
-var = let vars = Map.fromList [("a", 4)]
-      in processVars (Var "a") vars @?= (4, Env vars Map.empty Map.empty)
+var = let vars = Map.fromList [("a", Number 4)]
+      in processVars (Var "a") vars @?= (4, Env vars Map.empty)
 
-eql = processVars (EqlStmt (Var "a") (Number 4)) (Map.fromList [("a", 2)]) @?= (4, Env (Map.fromList [("a", 4)]) Map.empty Map.empty)
+eql = processVars (EqlStmt (Var "a") (Number 4)) (Map.fromList [("a", Number 2)]) @?= (4, Env (Map.fromList [("a", Number 4)]) Map.empty)
 
-bind = evalPass (OpExpr "+" (Var "a") (Number 2)) env @?= (4, env)
-       where env = Env (Map.fromList [("b", 2)]) Map.empty $ Map.fromList [("a", Var "b")]
+bind = processVars (OpExpr "+" (Var "a") (Number 2)) vars @?= (4, Env vars Map.empty)
+       where vars = Map.fromList [("b", Number 2), ("a", Var "b")]
 
-bindStmt = processVars (BindStmt (Var "a") (Var "b")) vars @?= (2, Env vars Map.empty bound)
-           where vars = Map.fromList [("b", 2)]
-                 bound = Map.fromList [("a", Var "b")]
+bindStmt = processVars (BindStmt (Var "a") (Var "b")) vars @?= (2, Env vars Map.empty)
+           where vars = Map.fromList [("b", Number 2), ("a", Var "b")]
 
 errorVar = assertRaises "" (ErrorCall "Use of undefined variable \"a\"")
                            (evaluate $ process (Var "a"))
@@ -102,7 +101,7 @@ errorBuiltinFuncArgs = assertRaises "" (ErrorCall "Unexpected number of argument
 
 errorFuncArgs = assertRaises "" (ErrorCall "Unexpected number of arguments")
                                 -- Use some empty variables to force the evaluation of the expression
-                                (processFuncs (FuncExpr "foo" [Number 2, Number 3]) fooFunc @?= (4, Env Map.empty Map.empty Map.empty))
+                                (processFuncs (FuncExpr "foo" [Number 2, Number 3]) fooFunc @?= (4, Env Map.empty Map.empty))
                                 where fooFunc = Map.fromList [("foo", Function ["a"] (Var "a"))]
 
 errorAST = assertRaises "" (ErrorCall $ "Cannot evaluate the statement " ++ show ast)

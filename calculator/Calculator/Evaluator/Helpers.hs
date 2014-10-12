@@ -18,12 +18,10 @@ eval :: AST -> EnvState CReal
 eval (Number n) = return n
 
 eval (Var var) = do
-    (Env vars _ binds) <- get
+    (Env vars _) <- get
     case Map.lookup var vars of
-        Just val -> return val
-        Nothing -> case Map.lookup var binds of
-                       Just e -> eval e
-                       Nothing -> error $ "Use of undefined variable \"" ++ var ++ "\""
+        Just e -> eval e
+        Nothing -> error $ "Use of undefined variable \"" ++ var ++ "\""
 
 eval (Neg e) = negate <$> eval e
 
@@ -46,7 +44,8 @@ eval ast = error $ "Cannot evaluate the statement " ++ show ast
 
 evalFunction :: Function -> [CReal] -> CReal
 evalFunction (Function p b) args =
-    let env = Env (Map.fromList $ zip' p args) Map.empty Map.empty
+    let numericArgs = map Number args
+        env = Env (Map.fromList $ zip' p numericArgs) Map.empty
     in evalState (eval b) env
 
 zip' :: [a] -> [b] -> [(a, b)]
