@@ -12,3 +12,4 @@ cabal.*
 *.swp
 node_modules
 .hpc
+tags

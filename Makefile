@@ -43,3 +43,12 @@ $(OBJDIR) $(BINDIR):
 clean:
 		@echo "Cleaning..."
 		@sudo rm -rf state/ $(OBJDIR) .hpc/ *.tix
+
+.PHONY: tags
+tags:
+		@echo "Making calculator tags"
+		@echo ":ctags" | ./repl -v0 calculator/Calculator.hs
+		@echo "Making api tags"
+		@echo ":ctags" | ./repl -v0 api/TextToMath.hs
+		@echo "Making test tags"
+		@echo ":ctags" | ./repl -v0 tests/integration/TestSuite.hs
