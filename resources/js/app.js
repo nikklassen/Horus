@@ -47,7 +47,7 @@
         $scope.input = ''
         $scope.submit = function() {
             $http.post(
-                '/api/calculate',
+                'api/calculate',
                 { input: $scope.input },
                 { headers: { 'Content-Type': 'application/json' } }
             ).success(function(data) {
@@ -74,7 +74,7 @@
 
         $scope.remove = function(val) {
             $http.post(
-                '/api/userInfo',
+                'api/userInfo',
                 [{ 'op': 'remove', 'path': val.id }],
                 { headers: { 'Content-Type': 'application/json-patch+json' } }
             ).success(function() {
@@ -84,14 +84,14 @@
 
         $scope.reset = function() {
             $http.delete(
-                '/api/userInfo'
+                'api/userInfo'
             ).success(function() {
                 $scope.env = {}
             })
         }
 
         // Load initial view
-        $http.get('/api/userInfo')
+        $http.get('api/userInfo')
         .success(addToEnv)
     })
 
