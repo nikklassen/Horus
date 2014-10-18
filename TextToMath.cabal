@@ -34,4 +34,5 @@ executable TextToMath
                        HUnit,
                        testpack,
                        parsec,
-                       deepseq-generics
+                       deepseq-generics,
+                       statestack

@@ -7,10 +7,10 @@ module Calculator.Data.Env (
 
 import Calculator.Data.AST
 import Calculator.Functions
-import Control.Monad.State (State)
+import Control.Monad.StateStack (StateStack)
 import Data.Map (Map, alter)
 
-type EnvState = State Env
+type EnvState a = StateStack Env a
 
 data Env = Env { getVars :: Map String AST
                , getFuncs :: Map String Function

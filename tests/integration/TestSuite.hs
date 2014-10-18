@@ -6,6 +6,7 @@ import qualified Calculator.Evaluator.Tests as Evaluator
 import qualified Calculator.Parser.Tests as Parser
 import qualified Calculator.SynCheck.Tests as SynCheck
 
+main :: IO ()
 main = defaultMain [
     testGroup "Calculator.Canon.Tests" Canon.tests,
     testGroup "Calculator.Evaluator.Tests" Evaluator.tests,

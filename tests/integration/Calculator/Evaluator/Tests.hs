@@ -26,9 +26,6 @@ tests = [ testGroup "Simple"
             , testCase "Real mod" realMod
             , testCase "Negative number with power" negToPower
             , testCase "Negate" neg
-            , testCase "Function" function
-            , testCase "User function" userFunction
-            , testCase "Function definition" functionDef
             , testCase "Var" var
             , testCase "Assignment" eql
             , testCase "Bind" bind
@@ -40,6 +37,13 @@ tests = [ testGroup "Simple"
             , testCase "Builtin function - wrong number of args" errorBuiltinFuncArgs
             , testCase "User function - wrong number of args" errorFuncArgs
             , testCase "Invalid AST" errorAST
+            ]
+        , testGroup "Functions"
+            [ testCase "Function definition" functionDef
+            , testCase "Function" function
+            , testCase "User function" userFunction
+            , testCase "Function in function" nestedFunction
+            , testCase "Variable scoping" varScopes
             ]
         ]
 
@@ -71,14 +75,6 @@ negToPower = process (OpExpr "^" (Number (-3))
 
 neg = process (Neg (Number 2)) @?= -2
 
-function = process (FuncExpr "sin" [Number 1]) @?= sin 1
-
-userFunction = processFuncs (FuncExpr "foo" [Number 2]) fooFunc @?= (4, Env Map.empty fooFunc)
-               where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Var "b") (Number 2)))]
-
-functionDef = processFuncs (EqlStmt (FuncExpr "foo" [Var "b"]) (OpExpr "+" (Var "b") (Number 2))) Map.empty @?= (0, Env Map.empty fooFunc)
-              where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Number 2) (Var "b")))]
-
 var = let vars = Map.fromList [("a", Number 4)]
       in processVars (Var "a") vars @?= (4, Env vars Map.empty)
 
@@ -107,3 +103,23 @@ errorFuncArgs = assertRaises "" (ErrorCall "Unexpected number of arguments")
 errorAST = assertRaises "" (ErrorCall $ "Cannot evaluate the statement " ++ show ast)
                            (evaluate $ process ast)
                            where ast = EqlStmt (Number 2) (Number 3)
+
+functionDef = processFuncs (EqlStmt (FuncExpr "foo" [Var "b"]) (OpExpr "+" (Var "b") (Number 2))) Map.empty @?= (0, Env Map.empty fooFunc)
+              where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Number 2) (Var "b")))]
+
+function = process (FuncExpr "sin" [Number 1]) @?= sin 1
+
+userFunction = processFuncs (FuncExpr "foo" [Number 2]) fooFunc @?= (4, Env Map.empty fooFunc)
+               where fooFunc = Map.fromList [("foo", Function ["b"] (OpExpr "+" (Var "b") (Number 2)))]
+
+nestedFunction = fst (evalPass (FuncExpr "f" [Number 2]) env) @?= 2
+                 where f = ("f", Function ["a"] (FuncExpr "m" [Var "a"]))
+                       m = ("m", Function ["a"] (Var "a"))
+                       env = Env Map.empty $ Map.fromList [f, m]
+
+-- The local x variable should be used when evaluating f
+-- and the global x should be used when evaluating inner function m
+varScopes = fst (evalPass (FuncExpr "f" [Number 2]) env) @?= 13
+            where f = ("f", Function ["x"] (OpExpr "+" (Var "x") (FuncExpr "m" [Number 3])))
+                  m = ("m", Function ["a"] (OpExpr "+" (Var "x") (Var "a")))
+                  env = Env (Map.fromList [("x", Number 8)]) $ Map.fromList [f, m]

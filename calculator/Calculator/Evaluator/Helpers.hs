@@ -10,9 +10,10 @@ import Calculator.Data.AST
 import Calculator.Data.Env
 import Calculator.Functions
 import Control.Applicative ((<$>))
-import Control.Monad.State (gets, get, evalState)
+import Control.Monad.State (gets, get, put)
+import Control.Monad.StateStack (restore, save)
 import Data.Number.CReal
-import qualified Data.Map as Map (lookup, fromList, empty)
+import qualified Data.Map as Map (lookup, fromList, union)
 
 eval :: AST -> EnvState CReal
 eval (Number n) = return n
@@ -37,16 +38,24 @@ eval (FuncExpr func es) = do
         Nothing -> do
             funcs <- gets getFuncs
             case Map.lookup func funcs of
-                Just f -> return $ evalFunction f args
+                Just f -> evalFunction f args
                 Nothing -> error $ "Use of undefined function \"" ++ func ++ "\""
 
 eval ast = error $ "Cannot evaluate the statement " ++ show ast
 
-evalFunction :: Function -> [CReal] -> CReal
-evalFunction (Function p b) args =
-    let numericArgs = map Number args
-        env = Env (Map.fromList $ zip' p numericArgs) Map.empty
-    in evalState (eval b) env
+evalFunction :: Function -> [CReal] -> EnvState CReal
+evalFunction (Function p b) args = do
+    let argVars = Map.fromList $ zip' p $ map Number args
+    oldEnv <- get
+    -- bring back the original "global" state
+    (Env vs fs) <- peek
+    -- shadow global vars with params
+    put $ Env (Map.union argVars vs) fs
+    result <- eval b
+    -- restore the original function's environment
+    put oldEnv
+    return result
+    where peek = restore >> save >> get
 
 zip' :: [a] -> [b] -> [(a, b)]
 zip' (x:xs) (y:ys) = (x, y) : zip' xs ys
