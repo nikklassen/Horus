@@ -1,6 +1,7 @@
 module Calculator.Functions (
     Function(..),
     buildFunction,
+    showDeclaration,
 
     isFunction,
     getFunction
@@ -22,7 +23,10 @@ showArgs (a:[]) = a
 showArgs (a:as) = a ++ ", " ++ showArgs as
 
 instance Show Function where
-    show (Function p b) = "(" ++ showArgs p ++ ") = " ++ show b
+    show f@(Function _ b) = showDeclaration f ++ "= " ++ show b
+
+showDeclaration :: Function -> String
+showDeclaration (Function p _) = "(" ++ showArgs p ++ ")"
 
 buildFunction :: [AST] -> AST -> Function
 buildFunction parameters = Function (getNames parameters)

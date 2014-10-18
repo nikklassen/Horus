@@ -56,12 +56,12 @@ Homepage.prototype = {
 // Test server data
 // User name: testUser
 // Vars:      a = 2.0
-// Functions: a(x) = 2.0 + x
+// Functions: a(x) = x + 2
 // Bound:     y := a
 //
 // User name: testUser2
 // Vars:      b = 3.0
-// Functions: b(x) = 3.0 + x
+// Functions: b(x) = x + 3
 // Bound:     z := b
 describe('homepage', function () {
 
@@ -115,7 +115,7 @@ describe('homepage', function () {
         assert.eventually.equal(f.isPresent(), true)
 
         expect(f.name.getText()).to.eventually.equal('a(x)')
-        expect(f.value.getText()).to.eventually.equal('(2.0 + x)')
+        expect(f.value.getText()).to.eventually.equal('x + 2')
     })
 
     it('should have existing bound variables', function() {
@@ -152,7 +152,7 @@ describe('homepage', function () {
         assert.eventually.equal(f.isPresent(), true)
 
         expect(f.name.getText()).to.eventually.equal('q(r)')
-        expect(f.value.getText()).to.eventually.equal('(3.0 * r)')
+        expect(f.value.getText()).to.eventually.equal('3 * r')
     })
 
     it('should delete a bound variable', function() {

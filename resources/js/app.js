@@ -13,9 +13,8 @@
 
             switch (type) {
                 case 'funcs':
-                    var sides = (obj.name + obj.value).split('=')
-                    displayName = sides[0].trim()
-                    displayValue = sides[1].trim()
+                    displayName = obj.value.decl
+                    displayValue = obj.value.def
                     break
                 case 'vars':
                     displayName = obj.name

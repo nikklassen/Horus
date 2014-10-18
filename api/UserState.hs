@@ -17,7 +17,7 @@ import Data.Typeable
 import qualified Data.Map as Map
 
 data User = User { getVars :: Map String AST
-                 , getFuncs :: Map String Function
+                 , getFuncs :: Map String (Function, String)
                  } deriving (Show, Typeable)
 
 data UserDb = UserDb { allUsers :: Map String User

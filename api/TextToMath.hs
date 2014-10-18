@@ -7,7 +7,8 @@ module TextToMath (
 import Calculator
 import Calculator.Data.Env
 import Calculator.Data.AST
-import Calculator.DeepSeq()
+import Calculator.DeepSeq ()
+import Calculator.Functions (Function, showDeclaration)
 import Control.Applicative (optional, (<$>))
 import Control.DeepSeq (($!!))
 import Control.Monad (msum)
@@ -15,6 +16,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Acid (AcidState)
 import Data.Acid.Advanced (query', update')
 import Data.Aeson ((.=))
+import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
@@ -44,29 +46,38 @@ calc acid = do
         if contentType "application/json" rq then do
             maybeBody <- takeRequestBody rq
             case Aeson.decode $ unBody $ fromMaybe (Body "") maybeBody :: Maybe (Map String String) of
-                Just b -> do
-                    let input = fromMaybe "" $ Map.lookup "input" b
+                Just jsonContent -> do
+                    let input = fromMaybe "" $ Map.lookup "input" jsonContent
                     userId <- getUserId
                     User variables functions <- query' acid (UserState.GetUser userId)
-                    result <- liftIO $ getReturnText input $ Env variables functions
+                    result <- liftIO $ getReturnText input $ Env variables (Map.map fst functions)
                     addCookie Session $ mkCookie "user-id" userId
                     case result of
                         Left err -> do
                             let res = jsonResponse [ "error" .= err ]
                             badRequest res
                         Right ans -> do let newVars = vars ans
-                                        let newFuncs = funcs ans
+                                        let newFuncs = addFunctionText input $ copyFunctionText (funcs ans) functions
+                                        let addedFuncs = Map.differenceWith (\a b -> if a /= b then Just a else Nothing) newFuncs functions
                                         update' acid (UserState.SetUser userId $ User newVars newFuncs)
-                                        let addedFuncs = Map.differenceWith takeFirst newFuncs functions
-                                        let res = jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans) addedFuncs $ "result" .= answer ans
+                                        let res = jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans)
+                                                                          (Map.mapWithKey funcsToJSON addedFuncs)
+                                                                          ("result" .= answer ans)
                                         ok res 
                 Nothing -> badRequest $ toResponse ("Unable to parse body" :: String)
         else resp 415 $ toResponse ("Content type must be application/json" :: String)
-        where takeFirst a b = if a /= b then Just a else Nothing
+        where -- Extract the user-entered body of the function
+              getFunctionText input = dropWhile isSpace $ drop 1 $ dropWhile (not . (==) '=') input
+              -- Add the correct function text for new or modified functions
+              addFunctionText input = Map.map (\(f,name) -> if null name then (f, getFunctionText input) else (f,name))
               makeJSON vs fs res = [ "vars" .= vs
                                    , "funcs" .= fs
                                    , res
                                    ]
+              -- Copy the text of the original functions to the new
+              -- functions, with a default value of "".
+              -- Union works since the user can't delete functions here
+              copyFunctionText newFuncs = Map.unionWith (\new@(newF,_) (oldF, text) -> if newF == oldF then (newF,text) else new) (Map.map (\x -> (x,"")) newFuncs)
 
 getUserInfo :: AcidState UserDb -> ServerPart Response
 getUserInfo acid = do
@@ -76,11 +87,11 @@ getUserInfo acid = do
     addCookie Session $ mkCookie "user-id" userId
 
     -- no op calculation to force bound vars to get calculed
-    result <- liftIO $ getReturnText "0" (Env variables functions)
+    result <- liftIO $ getReturnText "0" (Env variables (Map.map fst functions))
     case result of
         Left err -> ok $ jsonResponse [ "error" .= err ]
         Right ans -> ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON (boundResults ans)) (vars ans)
-                                       , "funcs" .= funcs ans
+                                       , "funcs" .= Map.mapWithKey funcsToJSON functions
                                        ]
     
 varsToJSON :: Map String CReal -> String -> AST -> Aeson.Value
@@ -88,6 +99,11 @@ varsToJSON _ _ (Number n) = Aeson.object [ "value" .= n ]
 varsToJSON bound v expr =  Aeson.object [ "value" .= (bound Map.! v)
                                         , "expr" .= show expr
                                         ]
+
+funcsToJSON :: String -> (Function, String) -> Aeson.Value
+funcsToJSON k (f, text) = Aeson.object [ "decl" .= (k ++ showDeclaration f)
+                                       , "def" .= text
+                                       ]
 
 resetUserInfo :: AcidState UserDb -> ServerPart Response
 resetUserInfo acid = do

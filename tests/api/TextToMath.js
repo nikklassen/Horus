@@ -7,12 +7,12 @@ var request = require('supertest')
 // User name: testUser
 // Vars:      a = 2.0,
 //            y := a
-// Functions: a(x) = 2.0 + x
+// Functions: a(x) = x + 2
 //
 // User name: testUser2
 // Vars:      b = 3.0
 //            z := b
-// Functions: b(x) = 3.0 + x
+// Functions: b(x) = x + 3
 describe('TextToMath Api', function() {
 
     describe('Calculate', function() {
@@ -96,7 +96,12 @@ describe('TextToMath Api', function() {
 
                     expect(res.body).to.eql({
                         vars: {},
-                        funcs: { a: '(x) = (1.0 + x)' },
+                        funcs: {
+                            a: {
+                                decl: 'a(x)',
+                                def: 'x + 1'
+                            }
+                        },
                         result: 0.0
                     })
 
@@ -163,7 +168,12 @@ describe('TextToMath Api', function() {
                                 value: 2
                             }
                         },
-                        funcs: { a: '(x) = (2.0 + x)' }
+                        funcs: {
+                            a: {
+                                decl: 'a(x)',
+                                def: 'x + 2'
+                            }
+                        }
                     })
 
                     done()
