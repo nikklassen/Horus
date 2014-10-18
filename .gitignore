@@ -1,7 +1,6 @@
 state/
 obj/
 bin/
-resources/reports
 .cabal*
 cabal.*
 *.o
@@ -13,3 +12,6 @@ cabal.*
 node_modules
 .hpc
 tags
+.lvimrc
+*.tix
+**/*.log
