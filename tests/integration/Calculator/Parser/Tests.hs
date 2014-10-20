@@ -30,8 +30,12 @@ tests = [ testGroup "Simple" [
             testCase "Functions" parseFuncs,
             testCase "Function - multiple params" parseFuncMulti,
             testCase "Function definition" parseFuncDef,
+            testCase "Log with base" parseLogBase,
             testCase "Equals sign" parseEqls,
-            testCase "Negative" parseNeg
+            testCase "Bind statement" parseBind,
+            testCase "Negative" parseNeg,
+            testCase "Degree sign" parseDeg,
+            testCase "Factorial" parseFact
             ]
         , testGroup "Simple - Errors" [
             testCase "Int-Id" parseIntId,
@@ -73,9 +77,17 @@ parseFuncMulti = parse "f( a , 2 )" @?= FuncExpr "f" [Var "a", Number 2]
 
 parseFuncDef = parse "f(a) = a + 2" @?= EqlStmt (FuncExpr "f" [Var "a"]) (OpExpr "+" (Var "a") (Number 2))
 
+parseLogBase = parse "log_2(10)" @?= FuncExpr "log" [Number 2, Number 10]
+
 parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number 1)
 
+parseBind = parse "a := x" @?= BindStmt (Var "a") (Var "x")
+
 parseNeg = parse "1 / -2" @?= OpExpr "/" (Number 1) (Neg (Number 2))
+
+parseDeg = parse "180°" @?= FuncExpr "deg" [Number 180]
+
+parseFact = parse "2^3!" @?= OpExpr "^" (Number 2) (FuncExpr "!" [Number 3])
 
 parseIntId = assertException (evaluate $ parse "123abc")
 

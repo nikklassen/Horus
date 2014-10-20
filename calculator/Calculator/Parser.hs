@@ -8,7 +8,7 @@ import Calculator.Data.AST
 import Calculator.Parser.Helpers
 import Control.Applicative ((<$>), (*>), (<*))
 import Text.Parsec.Char(char, spaces, space, string)
-import Text.Parsec.Combinator (many1, choice, eof, sepBy)
+import Text.Parsec.Combinator (many1, choice, eof, sepBy, option)
 import Text.Parsec.Error (errorPos)
 import Text.Parsec.Expr
 import Text.Parsec.Pos (sourceColumn)
@@ -19,14 +19,21 @@ import qualified Text.Parsec.Prim as Parsec (parse)
 numeric :: Parser AST
 numeric = Number <$> choice [decimal, float]
 
+functionArgs :: Parser [AST]
+functionArgs = do
+    suffix <- option [] $ try $
+        char '_' *> (flip (:) [] <$> numeric)
+    _ <- char '('
+    es <- expr `sepBy` char ','
+    _ <- char ')'
+    return $ suffix ++ es
+
 varOrFunction :: Parser AST
 varOrFunction = do
     f <- identifier
     try $ do
-        _ <- char '('
-        es <- expr `sepBy` char ','
-        _ <- char ')'
-        return $ FuncExpr f es
+        args <- functionArgs
+        return $ FuncExpr f args
         <|> return (Var f)
 
 eqlStatement = do
@@ -54,7 +61,10 @@ statement = (try eqlStatement
 expr :: Parser AST
 expr = buildExpressionParser operators term
 
-operators = [ [ binary '^' (OpExpr "^") AssocRight ]
+-- Ordered by precedence
+operators = [ [ postfix '\xB0' (FuncExpr "deg" . toArray) ] -- degree sign
+            , [ postfix '!' (FuncExpr "!" . toArray) ]
+            , [ binary '^' (OpExpr "^") AssocRight ]
             , [ binary '*' (OpExpr "*") AssocLeft
               , binary '/' (OpExpr "/") AssocLeft
               ]
@@ -64,6 +74,8 @@ operators = [ [ binary '^' (OpExpr "^") AssocRight ]
             , [ binary '%' (OpExpr "%") AssocLeft ]
             ]
             where binary op func = Infix (char op >> return func)
+                  postfix op func = Postfix (char op >> return func)
+                  toArray = flip (:) []
 
 term :: Parser AST
 term = do
