@@ -1,36 +1,39 @@
-.variables {
-    position: absolute;
-    margin-top: 50px;
-    right: 100px;
-    width: 200px;
+body {
+    padding-top: 50px;
 }
 
-.variables #reset {
-    margin-top: 10px;
+.starter-template {
+    padding: 40px 15px;
+    text-align: center;
 }
 
-.calculate {
-    width: 500px;
-    height: 300px;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin: auto;
+#submit {
+    position: relative;
+    top: 10px;
+    width: 100px;
 }
 
-#calculate-input {
-    margin: 15px 0 20px 0;
+.error {
+    color: red;
 }
 
-.calculate label {
-    font-size: 20px;
+.glyphicon-remove {
+    opacity: 0;
+    transition: all 0.1s ease-in-out;
+    float: right;
+    padding-top: 3px;
 }
 
-#result {
-    font-size: 60px;
-    color: rgb(0, 186, 0);
+tr:hover .glyphicon-remove {
+    opacity: 100;
+    text-decoration: none;
+    color: black;
+}
+
+.table.table-bordered td,
+.table.table-bordered th {
+    border-left: 0;
+    border-right: 0;
 }
 
 footer {
