@@ -5,17 +5,18 @@ module Calculator.Canon.Internal (
 ) where
 
 import Calculator.Data.AST
+import Calculator.Parser
 import Calculator.Evaluator.Helpers
-import Data.Number.CReal
+import Calculator.Data.Decimal
 
 -- show defaults to 40 decimal places, if there are less than this the
 -- answer is quaranteed to be exact.  To save on space, we want to make
 -- sure all answers stored are less than 81 digits (before and after dec)
-shouldFold :: CReal -> Bool
+shouldFold :: Decimal -> Bool
 shouldFold n = length (dropWhile (not . (== '.')) s) <= 40 && length s <= 81
                where s = show n
 
-eval' :: String -> CReal -> CReal -> AST
+eval' :: String -> Decimal -> Decimal -> AST
 eval' op lhs rhs = let res = operate op lhs rhs
                    in if shouldFold res then
                           Number res
@@ -41,26 +42,27 @@ canon (MultExpr lhs rhs) = case (canon lhs, canon rhs) of
                                -- Over addition
                                (AddExpr (Number n1) mRhs, num@(Number n2)) -> OpExpr "+" (eval' "*" n1 n2) (OpExpr "*" num mRhs)
                                (num@(Number n1), AddExpr (Number n2) mRhs) -> OpExpr "+" (eval' "*" n1 n2) (OpExpr "*" num mRhs)
-                               (n@(Number _), AddExpr aLhs aRhs) -> OpExpr "+" (OpExpr "*" n aLhs) (OpExpr "*" n aRhs)
-                               (AddExpr aLhs aRhs, n@(Number _)) -> OpExpr "+" (OpExpr "*" n aLhs) (OpExpr "*" n aRhs)
+                               (n@(Number _), [m|$aLhs + $aRhs|]) -> [m|($n * $aLhs) + ($n * $aRhs)|]
+                               ([m|$aLhs + $aRhs|], n@(Number _)) -> [m|($n * $aLhs) + ($n * $aRhs)|]
                                -- Over subtraction
-                               (n@(Number _), SubExpr aLhs aRhs) -> OpExpr "-" (OpExpr "*" n aLhs) (OpExpr "*" n aRhs)
-                               (SubExpr aLhs aRhs, n@(Number _)) -> OpExpr "-" (OpExpr "*" n aLhs) (OpExpr "*" n aRhs)
+                               (n@(Number _), [m|$aLhs - $aRhs|]) -> [m|($n * $aLhs) - ($n * $aRhs)|]
+                               ([m|$aLhs - $aRhs|], n@(Number _)) -> [m|($n * $aLhs) - ($n * $aRhs)|]
+
                                -- In general
-                               (AddExpr aLhs aRhs, ast) -> OpExpr "+" (OpExpr "*" aLhs ast) (OpExpr "*" aRhs ast)
-                               (ast, AddExpr aLhs aRhs) -> OpExpr "+" (OpExpr "*" ast aLhs) (OpExpr "*" ast aRhs)
-                               (SubExpr aLhs aRhs, ast) -> OpExpr "-" (OpExpr "*" aLhs ast) (OpExpr "*" aRhs ast)
-                               (ast, SubExpr aLhs aRhs) -> OpExpr "-" (OpExpr "*" ast aLhs) (OpExpr "*" ast aRhs)
+                               ([m|$aLhs + $aRhs|], ast) -> [m|($aLhs * $ast) + ($aRhs * $ast)|]
+                               (ast, [m|$aLhs + $aRhs|]) -> [m|($ast * $aLhs) + ($ast * $aRhs)|]
+                               ([m|$aLhs - $aRhs|], ast) -> [m|($aLhs * $ast) - ($aRhs * $ast)|]
+                               (ast, [m|$aLhs - $aRhs|]) -> [m|($ast * $aLhs) - ($ast * $aRhs)|]
 
                                -- Move numbers left
-                               (MultExpr (Number n1) mRhs, Number n2) -> OpExpr "*" (eval' "*" n1 n2) mRhs
-                               (Number n1, MultExpr (Number n2) mRhs) -> OpExpr "*" (eval' "*" n1 n2) mRhs
+                               ([m|$n:n1 * $mRhs|], Number n2) -> OpExpr "*" (eval' "*" n1 n2) mRhs
+                               (Number n1, [m|$n:n2 * $mRhs|]) -> OpExpr "*" (eval' "*" n1 n2) mRhs
                                (ast, n@(Number _)) -> OpExpr "*" n ast
 
                                -- Associate left
-                               (ast, MultExpr mLhs mRhs) -> OpExpr "*" (OpExpr "*" ast mLhs) mRhs
+                               (ast, [m|$mLhs * $mRhs|]) -> [m|($ast * $mLhs) * $mRhs|]
 
-                               (mLhs, mRhs) -> OpExpr "*" mLhs mRhs
+                               (mLhs, mRhs) -> [m|$mLhs * $mRhs|]
 
 canon (AddExpr lhs rhs) = case (canon lhs, canon rhs) of
                               -- Reduce constants
@@ -72,9 +74,9 @@ canon (AddExpr lhs rhs) = case (canon lhs, canon rhs) of
                               (ast, n@(Number _)) -> OpExpr "+" n ast
 
                               -- Assosiate left
-                              (ast, AddExpr aLhs aRhs) -> OpExpr "+" (OpExpr "+" ast aLhs) aRhs
+                              (ast, [m|$aLhs + $aRhs|]) -> [m|($ast + $aLhs) + $aRhs|]
 
-                              (aRhs, aLhs) -> OpExpr "+" aRhs aLhs
+                              (aLhs, aRhs) -> [m|$aLhs + $aRhs|]
 
 -- Remove subtraction
 canon (SubExpr lhs rhs) = case (canon lhs, canon rhs) of
@@ -84,7 +86,7 @@ canon (SubExpr lhs rhs) = case (canon lhs, canon rhs) of
                               -- Move numbers left
                               (ast, Number n) -> OpExpr "+" (Number $ negate n) ast
 
-                              (aRhs, aLhs) -> OpExpr "-" aRhs aLhs
+                              (aLhs, aRhs) -> [m|$aLhs - $aRhs|]
 
 -- Any other operations
 canon (OpExpr op lhs rhs) = case (canon lhs, canon rhs) of
@@ -105,3 +107,5 @@ canon (Neg e) = case canon e of
 -- Exhaustive matches (no ops)
 canon v@(Var _) = v
 canon n@(Number _) = n
+
+canon ast = error $ "Invalid expression \"" ++ show ast ++ "\""

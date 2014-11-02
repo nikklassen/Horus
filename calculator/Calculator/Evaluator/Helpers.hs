@@ -7,15 +7,15 @@ module Calculator.Evaluator.Helpers (
 ) where
 
 import Calculator.Data.AST
+import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Functions
 import Control.Applicative ((<$>))
 import Control.Monad.State (gets, get, put)
 import Control.Monad.StateStack (restore, save)
-import Data.Number.CReal
 import qualified Data.Map as Map (lookup, fromList, union)
 
-eval :: AST -> EnvState CReal
+eval :: AST -> EnvState Decimal
 eval (Number n) = return n
 
 eval (Var var) = do
@@ -43,7 +43,7 @@ eval (FuncExpr func es) = do
 
 eval ast = error $ "Cannot evaluate the statement " ++ show ast
 
-evalFunction :: Function -> [CReal] -> EnvState CReal
+evalFunction :: Function -> [Decimal] -> EnvState Decimal
 evalFunction (Function p b) args = do
     let argVars = Map.fromList $ zip' p $ map Number args
     oldEnv <- get
@@ -62,7 +62,7 @@ zip' (x:xs) (y:ys) = (x, y) : zip' xs ys
 zip' [] [] = []
 zip' _ _ = error "Unexpected number of arguments"
 
-operate :: String -> CReal -> CReal -> CReal
+operate :: String -> Decimal -> Decimal -> Decimal
 operate op n1 n2 =
     case op of
         "+" -> n1 + n2

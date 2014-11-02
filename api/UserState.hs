@@ -1,17 +1,15 @@
 {-# LANGUAGE TemplateHaskell, DeriveDataTypeable, TypeFamilies #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module UserState where
 
 import Calculator.Data.AST (AST(..))
+import Calculator.Data.Decimal ()
 import Calculator.Functions (Function(..))
-import Control.Applicative ((<$>))
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 import Data.Acid
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
-import Data.Number.CReal
 import Data.SafeCopy
 import Data.Typeable
 import qualified Data.Map as Map
@@ -38,13 +36,6 @@ getUser userId = do
 setUser :: String -> User -> Update UserDb ()
 setUser userId user = modify go
     where go (UserDb db) = UserDb $ Map.alter (\_ -> Just user) userId db
-
-instance SafeCopy CReal where
-     putCopy n = contain $ safePut $ show n
-     getCopy = contain $ read <$> safeGet
-
-deriveSafeCopy 0 'base ''AST
-deriveSafeCopy 0 'base ''Function
 
 deriveSafeCopy 0 'base ''User
 deriveSafeCopy 0 'base ''UserDb

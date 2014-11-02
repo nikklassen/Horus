@@ -5,7 +5,6 @@ module Calculator.SynCheck (
 import Calculator.Data.AST
 import Calculator.Data.Env
 import Calculator.Functions (body)
-import Calculator.DeepSeq ()
 import Control.DeepSeq (force, ($!!))
 import Data.Map ((!))
 import Data.Set (Set, insert)

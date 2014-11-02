@@ -7,7 +7,6 @@ module TextToMath (
 import Calculator
 import Calculator.Data.Env
 import Calculator.Data.AST
-import Calculator.DeepSeq ()
 import Calculator.Functions (Function, showDeclaration)
 import Control.Applicative (optional, (<$>))
 import Control.DeepSeq (($!!))
@@ -20,7 +19,7 @@ import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
-import Data.Number.CReal
+import Calculator.Data.Decimal
 import Happstack.Server hiding (body, result)
 import Serializer()
 import System.UUID.V4 (uuid)
@@ -94,7 +93,7 @@ getUserInfo acid = do
                                        , "funcs" .= Map.mapWithKey funcsToJSON functions
                                        ]
     
-varsToJSON :: Map String CReal -> String -> AST -> Aeson.Value
+varsToJSON :: Map String Decimal -> String -> AST -> Aeson.Value
 varsToJSON _ _ (Number n) = Aeson.object [ "value" .= n ]
 varsToJSON bound v expr =  Aeson.object [ "value" .= (bound Map.! v)
                                         , "expr" .= show expr

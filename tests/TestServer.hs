@@ -4,6 +4,7 @@ module Main where
 
 import Calculator.Data.AST (AST(..))
 import Calculator.Functions (Function(..))
+import Calculator.Parser
 import Control.Exception
 import Data.Acid
 import Data.Acid.Memory
@@ -36,5 +37,5 @@ testState = UserDb $ Map.fromList
                     (Map.fromList [("b", Number 3), ("z", Var "b")])
                     (Map.fromList [("b", b)]))
                 ]
-            where a = (Function ["x"] (OpExpr "+" (Number 2) (Var "x")), "x + 2")
-                  b = (Function ["x"] (OpExpr "+" (Number 3) (Var "x")), "x + 3")
+            where a = (Function ["x"] [m|2 + x|], "x + 2")
+                  b = (Function ["x"] [m|3 + x|], "x + 3")

@@ -4,7 +4,7 @@ module Calculator.Functions.Tests where
 
 import Calculator.Data.AST
 import Calculator.Functions
-import Data.Number.CReal
+import Calculator.Data.Decimal
 import Data.Maybe (fromJust)
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
@@ -27,20 +27,20 @@ tests = [ testCase "Show declaration" showDecl
         , testCase "Log no base" logNoBase
         ]
 
-func :: String -> [CReal] -> CReal
+func :: String -> [Decimal] -> Decimal
 func = fromJust . getFunction
 
 showDecl = showDeclaration (Function ["a", "b"] (Number 2)) @?= "(a, b)"
 
 declareWithNonVar = deepAssertRaises "Unexpected expression \"2.0\" in parameter list" $ buildFunction [Var "a", Number 2] (Number 2)
 
-integralFunc = func "ceil" [1.23] @?= (2 :: CReal)
+integralFunc = func "ceil" [1.23] @?= (2 :: Decimal)
 
 isFunctionTrue = isFunction "sin" @?= True
 
 isFunctionFalse = isFunction "notAFunction" @?= False
 
-degrees = func "deg" [180] @?= (pi :: CReal)
+degrees = func "deg" [180] @?= (pi :: Decimal)
 
 factNonInteger = deepAssertRaises "Factorial can only be applied to non-negative integers" $
                                   func "fact" [1.23]

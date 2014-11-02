@@ -6,19 +6,19 @@ module Calculator.Evaluator (
 
 import Calculator.Canon
 import Calculator.Data.AST
+import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Evaluator.Helpers
 import Calculator.Functions
 import Calculator.SynCheck
 import Control.Monad.State (modify, gets)
 import Control.Monad.StateStack (save, restore, runStateStack)
-import Data.Number.CReal
 
-evalPass :: AST -> Env -> (CReal, Env)
+evalPass :: AST -> Env -> (Decimal, Env)
 -- save the initial global state onto the stack
 evalPass ast = runStateStack (save >> evalPass' ast)
 
-evalPass' :: AST -> EnvState CReal
+evalPass' :: AST -> EnvState Decimal
 evalPass' ast@(EqlStmt (Var var) e) = do
     !_ <- gets $ synCheckPass ast
     val <- eval e

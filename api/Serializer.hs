@@ -4,11 +4,11 @@
 module Serializer where
 
 import Calculator.Functions
-import Data.Number.CReal
+import Calculator.Data.Decimal
 import Data.Text
 import Data.Aeson
 
-instance ToJSON CReal where
+instance ToJSON Decimal where
     toJSON = toValue
 
 instance ToJSON Function where

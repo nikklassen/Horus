@@ -1,21 +1,32 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, TemplateHaskell #-}
 
 module Calculator.Data.AST (
     AST(..),
     astMap
 ) where
 
-import Data.Number.CReal
+import Calculator.Data.Decimal
+import Control.DeepSeq.Generics
+import Data.Data
 import GHC.Generics
+import Data.SafeCopy
 
 data AST = EqlStmt AST AST
            | BindStmt AST AST
            | OpExpr String AST AST
            | FuncExpr String [AST]
            | Var String
-           | Number CReal
+           | Number Decimal
            | Neg AST
-           deriving (Eq, Generic)
+
+           -- Antiquotation
+           | AVar String
+           | ANum String
+           | AId String
+           deriving (Eq, Generic, Typeable, Data)
+
+instance NFData AST where
+    rnf = genericRnf
 
 astMap :: (AST -> AST) -> AST -> AST
 astMap f (EqlStmt lhs rhs) = f $ EqlStmt (astMap f lhs) (astMap f rhs)
@@ -25,6 +36,7 @@ astMap f (FuncExpr name ps) = f $ FuncExpr name (map (astMap f) ps)
 astMap f v@(Var _) = f v
 astMap f n@(Number _) = f n
 astMap f (Neg a) = f $ Neg (astMap f a)
+astMap _ a = error $ "Invalid ast " ++ show a
 
 showArgs :: [AST] -> String
 showArgs [] = ""
@@ -45,3 +57,11 @@ instance Show AST where
     show (Number n) = show n
 
     show (Neg e) = "-" ++ show e
+
+    show (AVar v) = "$v:" ++ v
+
+    show (ANum n) = "$n:" ++ n
+
+    show (AId i) = '$' : i
+
+deriveSafeCopy 0 'base ''AST

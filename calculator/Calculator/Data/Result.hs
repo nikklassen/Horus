@@ -4,12 +4,16 @@ module Calculator.Data.Result (
 
 import Calculator.Data.AST
 import Calculator.Functions
+import Control.DeepSeq (NFData, rnf)
 import Data.Map (Map)
-import Data.Number.CReal
+import Calculator.Data.Decimal
 
 data Result = Result {
-    answer :: CReal,
+    answer :: Decimal,
     vars :: Map String AST,
     funcs :: Map String Function,
-    boundResults :: Map String CReal
+    boundResults :: Map String Decimal
 } deriving (Eq, Show)
+
+instance NFData Result where
+    rnf (Result r v f b) = rnf r `seq` rnf v `seq` rnf f `seq` rnf b

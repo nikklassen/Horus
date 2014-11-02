@@ -1,6 +1,5 @@
 module TestHelpers where
 
-import Calculator.DeepSeq ()
 import Control.DeepSeq (($!!), NFData)
 import Control.Exception (ErrorCall(..))
 import Test.HUnit

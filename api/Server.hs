@@ -1,14 +1,10 @@
 module Main where
 
-import TextToMath
-import Calculator.Functions (Function(..))
-import Calculator.Data.AST (AST(..))
-
-import Happstack.Server
-import Data.Acid
-import UserState
 import Control.Exception
-import Data.Acid.Memory
+import Data.Acid
+import Happstack.Server
+import TextToMath
+import UserState
 
 config :: Conf
 config = Conf { port        = 3000

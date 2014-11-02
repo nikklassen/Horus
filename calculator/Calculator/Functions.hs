@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Calculator.Functions (
     Function(..),
     buildFunction,
@@ -7,26 +9,31 @@ module Calculator.Functions (
     getFunction
 ) where
 
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.Number.CReal
-import Control.Arrow (second)
 import Calculator.Data.AST
+import Control.Arrow (second)
+import Control.DeepSeq
+import Data.Map (Map)
+import Calculator.Data.Decimal
+import Data.SafeCopy
+import qualified Data.Map as Map
 
 data Function = Function { params :: [String]
                          , body :: AST
                          } deriving (Eq)
 
-showArgs :: [String] -> String
-showArgs [] = ""
-showArgs (a:[]) = a
-showArgs (a:as) = a ++ ", " ++ showArgs as
+instance NFData Function where
+    rnf (Function p b) = rnf p `seq` rnf b
 
 instance Show Function where
     show f@(Function _ b) = showDeclaration f ++ "= " ++ show b
 
 showDeclaration :: Function -> String
 showDeclaration (Function p _) = "(" ++ showArgs p ++ ")"
+
+showArgs :: [String] -> String
+showArgs [] = ""
+showArgs (a:[]) = a
+showArgs (a:as) = a ++ ", " ++ showArgs as
 
 buildFunction :: [AST] -> AST -> Function
 buildFunction parameters = Function (getNames parameters)
@@ -39,10 +46,10 @@ getNames (ast:_) = error $ "Unexpected expression \"" ++ show ast ++ "\" in para
 isFunction :: String -> Bool
 isFunction f = Map.member f functions
 
-getFunction :: String -> Maybe ([CReal] -> CReal)
+getFunction :: String -> Maybe ([Decimal] -> Decimal)
 getFunction f = Map.lookup f functions
 
-functions :: Map String ([CReal] -> CReal)
+functions :: Map String ([Decimal] -> Decimal)
 functions = Map.fromList $ map (second applyToFirst)
                 -- Trig
                 [ ("sin", sin)
@@ -79,27 +86,29 @@ functions = Map.fromList $ map (second applyToFirst)
                 , ("log", log')
                 ]
 
-deg :: CReal -> CReal
+deg :: Decimal -> Decimal
 deg = (*) (pi / 180)
 
-fact :: CReal -> CReal
+fact :: Decimal -> Decimal
 fact n = if n == fromIntegral' (round n) && n >= 0 then
              product [1..n]
          else
              error "Factorial can only be applied to non-negative integers"
 
-root :: [CReal] -> CReal
+root :: [Decimal] -> Decimal
 root (n:x:[]) = x**(1/n)
 root _ = error "Unexpected number of arguments"
 
-log' :: [CReal] -> CReal
+log' :: [Decimal] -> Decimal
 log' (b:x:[]) = logBase b x
 log' (x:[]) = logBase 10 x
 log' _ = error "Unexpected number of arguments"
 
-fromIntegral' :: Integer -> CReal
+fromIntegral' :: Integer -> Decimal
 fromIntegral' = fromIntegral
 
 applyToFirst :: (a -> a) -> [a] -> a
 applyToFirst f (x:[]) = f x
 applyToFirst _ _ = error "Unexpected number of arguments"
+
+deriveSafeCopy 0 'base ''Function
