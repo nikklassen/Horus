@@ -30,7 +30,7 @@ executable TextToMath
                        numbers,
                        parsec,
                        safecopy,
-                       statestack
+                       statestack,
                        syb,
                        system-uuid,
                        template-haskell,
@@ -38,4 +38,4 @@ executable TextToMath
                        test-framework-hunit,
                        testpack,
                        text,
-                       transformers,
+                       transformers
