@@ -1,5 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Calculator.Functions (
     Function(..),
     buildFunction,

@@ -1,6 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-
 module Calculator.Parser (
     parse,
     m

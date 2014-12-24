@@ -4,14 +4,15 @@ LIBDIR = calculator
 APIDIR = api
 TESTDIR = tests
 
-LANGUAGE = -XQuasiQuotes
-GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fhpc -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d/ $(LANGUAGE)
+LANGUAGE = -XQuasiQuotes -XTemplateHaskell
+WARNINGS = -Wall
+GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fhpc -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d/ $(LANGUAGE) $(WARNINGS)
 INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
 KillTestServer = @killall test_server
 
-server: $(APIDIR)/Server.hs | $(BINDIR)
+server: $(APIDIR)/Server.hs tags | $(BINDIR)
 		@echo "Building server"
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/server
 
@@ -47,9 +48,5 @@ clean:
 
 .PHONY: tags
 tags:
-		@echo "Making calculator tags"
-		@echo ":ctags" | ./repl -v0 calculator/Calculator.hs
-		@echo "Making api tags"
-		@echo ":ctags" | ./repl -v0 api/TextToMath.hs
-		@echo "Making test tags"
-		@echo ":ctags" | ./repl -v0 tests/integration/TestSuite.hs
+		@echo "Making tags"
+		@hothasktags $(LANGUAGE) -O tags `find {calculator,api} -name '*.hs'`

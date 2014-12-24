@@ -6,16 +6,16 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable TextToMath
-  main-is:             TextToMath
+  main-is:             api/Server.hs
   other-extensions:    DeriveDataTypeable,
                        DeriveGeneric,
                        DoAndIfThenElse,
                        OverloadedStrings,
                        PatternSynonyms,
+                       QuasiQuotes,
                        ScopedTypeVariables
                        TemplateHaskell,
                        TypeFamilies,
-                       QuasiQuotes
   build-depends:       HUnit,
                        acid-state,
                        aeson,
@@ -25,6 +25,7 @@ executable TextToMath
                        deepseq,
                        deepseq-generics,
                        happstack-server,
+                       hothasktags,
                        lifted-base,
                        mtl,
                        numbers,

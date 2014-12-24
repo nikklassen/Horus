@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, DeriveDataTypeable, TypeFamilies #-}
+{-# LANGUAGE DeriveDataTypeable, TypeFamilies #-}
 
 module UserState where
 

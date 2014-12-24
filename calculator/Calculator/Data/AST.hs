@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DeriveDataTypeable, TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric, DeriveDataTypeable #-}
 
 module Calculator.Data.AST (
     AST(..),

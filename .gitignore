@@ -1,4 +1,5 @@
 state/
+dist/
 obj/
 bin/
 .cabal*
