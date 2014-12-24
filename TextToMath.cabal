@@ -14,9 +14,9 @@ executable TextToMath
                        PatternSynonyms,
                        QuasiQuotes,
                        RecordWildCards,
-                       ScopedTypeVariables
+                       ScopedTypeVariables,
                        TemplateHaskell,
-                       TypeFamilies,
+                       TypeFamilies
   build-depends:       HUnit,
                        acid-state,
                        aeson,
