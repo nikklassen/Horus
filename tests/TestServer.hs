@@ -3,7 +3,7 @@
 module Main where
 
 import Calculator.Data.AST (AST(..))
-import Calculator.Functions (Function(..))
+import Calculator.Data.Function (Function(..))
 import Calculator.Parser
 import Control.Exception
 import Data.Acid

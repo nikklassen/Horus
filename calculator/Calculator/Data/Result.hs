@@ -3,7 +3,7 @@ module Calculator.Data.Result (
 ) where
 
 import Calculator.Data.AST
-import Calculator.Functions
+import Calculator.Data.Function
 import Control.DeepSeq (NFData, rnf)
 import Data.Map (Map)
 import Calculator.Data.Decimal

@@ -7,22 +7,19 @@ module Calculator.Evaluator.Helpers (
 ) where
 
 import Calculator.Data.AST
-import Calculator.Data.Decimal
+import Calculator.Data.Decimal ()
 import Calculator.Data.Env
+import Calculator.Data.Function
 import Calculator.Functions
 import Control.Applicative ((<$>))
-import Control.Monad.State (gets, get, put)
-import Control.Monad.StateStack (restore, save)
-import qualified Data.Map as Map (lookup, fromList, union)
+import Calculator.Data.Decimal
+import qualified Data.Map as Map (fromList)
+import Control.Monad.RWS
 
-eval :: AST -> EnvState Decimal
+eval :: AST -> ScopeRWS Decimal
 eval (Number n) = return n
 
-eval (Var var) = do
-    (Env vars _) <- get
-    case Map.lookup var vars of
-        Just e -> eval e
-        Nothing -> error $ "Use of undefined variable \"" ++ var ++ "\""
+eval (Var var) = getEnvVar var >>= eval
 
 eval (Neg e) = negate <$> eval e
 
@@ -33,29 +30,21 @@ eval (OpExpr op leftExpr rightExpr) = do
 
 eval (FuncExpr func es) = do
     args <- mapM eval es
-    case getFunction func of
+    prefs <- ask
+    case getFunction func prefs of
         Just f -> return $ f args
-        Nothing -> do
-            funcs <- gets getFuncs
-            case Map.lookup func funcs of
-                Just f -> evalFunction f args
-                Nothing -> error $ "Use of undefined function \"" ++ func ++ "\""
+        Nothing -> getEnvFunc func >>= \f -> evalFunction f args
 
 eval ast = error $ "Cannot evaluate the statement " ++ show ast
 
-evalFunction :: Function -> [Decimal] -> EnvState Decimal
+evalFunction :: Function -> [Decimal] -> ScopeRWS Decimal
 evalFunction (Function p b) args = do
     let argVars = Map.fromList $ zip' p $ map Number args
-    oldEnv <- get
-    -- bring back the original "global" state
-    (Env vs fs) <- peek
-    -- shadow global vars with params
-    put $ Env (Map.union argVars vs) fs
-    result <- eval b
-    -- restore the original function's environment
-    put oldEnv
-    return result
-    where peek = restore >> save >> get
+    scope <- get
+    put $ scope { localVars = argVars }
+    res <- eval b
+    put scope
+    return res
 
 zip' :: [a] -> [b] -> [(a, b)]
 zip' (x:xs) (y:ys) = (x, y) : zip' xs ys

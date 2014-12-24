@@ -6,6 +6,7 @@ module Calculator.Parser (
 import Calculator.Data.AST
 import Calculator.Parser.Helpers
 import Control.Applicative ((<$>), (*>), (<*))
+import Control.Monad.Identity (Identity)
 import Data.Generics.Aliases (extQ)
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax (mkName)
@@ -64,8 +65,8 @@ expr :: Parser AST
 expr = buildExpressionParser operators term
 
 -- Ordered by precedence
-operators = [ [ postfix '\xB0' (FuncExpr "deg" . toArray) ] -- degree sign
-            , [ postfix '!' (FuncExpr "!" . toArray) ]
+operators :: OperatorTable String () Identity AST
+operators = [ [ postfix '!' (\n -> FuncExpr "!" [n]) ]
             , [ binary '^' (OpExpr "^") AssocRight ]
             , [ binary '*' (OpExpr "*") AssocLeft
               , binary '/' (OpExpr "/") AssocLeft
@@ -77,7 +78,6 @@ operators = [ [ postfix '\xB0' (FuncExpr "deg" . toArray) ] -- degree sign
             ]
             where binary op func = Infix (char op >> return func)
                   postfix op func = Postfix (char op >> return func)
-                  toArray = flip (:) []
 
 term :: Parser AST
 term = do

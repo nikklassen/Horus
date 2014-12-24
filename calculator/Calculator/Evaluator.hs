@@ -6,39 +6,47 @@ module Calculator.Evaluator (
 
 import Calculator.Canon
 import Calculator.Data.AST
-import Calculator.Data.Decimal
+import Calculator.Data.Decimal (Decimal)
 import Calculator.Data.Env
 import Calculator.Evaluator.Helpers
-import Calculator.Functions
+import Calculator.Data.Function
 import Calculator.SynCheck
-import Control.Monad.State (modify, gets)
-import Control.Monad.StateStack (save, restore, runStateStack)
+import Control.Monad.RWS
+import qualified Data.Map as Map (empty)
 
-evalPass :: AST -> Env -> (Decimal, Env)
--- save the initial global state onto the stack
-evalPass ast = runStateStack (save >> evalPass' ast)
+-- Start at the top level scope, i.e. no local vars
+evalPass :: AST -> UserPrefs -> Env -> (Decimal, Env)
+evalPass ast prefs env = let (a, (Scope _ e), _) =
+                                runRWS (evalPass' ast)
+                                       prefs
+                                       (Scope { localVars = Map.empty
+                                           , global = env
+                                           })
+                         in (a, e)
 
-evalPass' :: AST -> EnvState Decimal
+evalPass' :: AST -> ScopeRWS Decimal
 evalPass' ast@(EqlStmt (Var var) e) = do
-    !_ <- gets $ synCheckPass ast
+    !_ <- gets (synCheckPass ast . global)
     val <- eval e
-    modifyAndSave $ alterVars (\_ -> Just $ Number val) var
-    save
+    alterGlobal $ alterVars (\_ -> Just $ Number val) var
     return val
 
 evalPass' ast@(EqlStmt (FuncExpr f parameters) e) = do
-    !_ <- gets $ synCheckPass ast
+    !_ <- gets (synCheckPass ast . global)
     let func = buildFunction parameters $ canonPass e
-    modifyAndSave $ alterFuncs (\_ -> Just func) f
+    alterGlobal $ alterFuncs (\_ -> Just func) f
     return 0
 
 evalPass' ast@(BindStmt (Var var) e) = do
-    !_ <- gets $ synCheckPass ast
+    !_ <- gets (synCheckPass ast . global)
     let rhs = canonPass e
-    modifyAndSave $ alterVars (\_ -> Just rhs) var
+    alterGlobal $ alterVars (\_ -> Just rhs) var
     eval rhs
 
 evalPass' ast = eval ast
 
-modifyAndSave :: (Env -> Env) -> EnvState ()
-modifyAndSave e = restore >> modify e >> save
+alterGlobal :: (Env -> Env) -> ScopeRWS ()
+alterGlobal f =
+    modify $ \scope ->
+        let newGlobal = f $ global scope
+        in scope { global = newGlobal }

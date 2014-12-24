@@ -6,7 +6,7 @@ module Calculator.SynCheck.Tests (
 
 import Calculator.Data.AST
 import Calculator.Data.Env
-import Calculator.Functions
+import Calculator.Data.Function
 import Calculator.Parser
 import Calculator.SynCheck
 import Test.Framework.Providers.HUnit

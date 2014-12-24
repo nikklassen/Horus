@@ -2,21 +2,22 @@
 
 module Calculator.Functions.Tests where
 
-import Calculator.Data.AST
-import Calculator.Functions
 import Calculator.Data.Decimal
+import Calculator.Data.Env
+import Calculator.Functions
 import Data.Maybe (fromJust)
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 import Test.HUnit
 import TestHelpers
 
-tests = [ testCase "Show declaration" showDecl
-        , testCase "Declaration contains non-variable" declareWithNonVar
-        , testCase "Integral function" integralFunc
+tests = [ testCase "Integral function" integralFunc
         , testCase "Recognizes functions" isFunctionTrue
         , testCase "Recognizes non function" isFunctionFalse
-        , testCase "Converts degrees" degrees
+        , testGroup "Angles"
+            [ testCase "Degrees" degrees
+            , testCase "Radians" radians
+            ]
         , testGroup "Factorial"
             [ testCase "Non-integer" factNonInteger
             , testCase "Negative" factNegative
@@ -28,19 +29,19 @@ tests = [ testCase "Show declaration" showDecl
         ]
 
 func :: String -> [Decimal] -> Decimal
-func = fromJust . getFunction
-
-showDecl = showDeclaration (Function ["a", "b"] (Number 2)) @?= "(a, b)"
-
-declareWithNonVar = deepAssertRaises "Unexpected expression \"2.0\" in parameter list" $ buildFunction [Var "a", Number 2] (Number 2)
+func fName = fromJust $ getFunction fName defaultPrefs
 
 integralFunc = func "ceil" [1.23] @?= (2 :: Decimal)
 
-isFunctionTrue = isFunction "sin" @?= True
+isFunctionTrue = isFunction "sin" defaultPrefs @?= True
 
-isFunctionFalse = isFunction "notAFunction" @?= False
+isFunctionFalse = isFunction "notAFunction" defaultPrefs @?= False
 
-degrees = func "deg" [180] @?= (pi :: Decimal)
+degrees = sinEqualsOne 90 $ defaultPrefs { isRadians = False }
+
+radians = sinEqualsOne ((pi :: Decimal) / 2) $ defaultPrefs { isRadians = True }
+
+sinEqualsOne angle prefs = (fromJust $ getFunction "sin" prefs) [angle] @?= (1 :: Decimal)
 
 factNonInteger = deepAssertRaises "Factorial can only be applied to non-negative integers" $
                                   func "fact" [1.23]

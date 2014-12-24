@@ -12,11 +12,11 @@ import Calculator.Parser
 import Data.Map (Map)
 import qualified Data.Map as Map (insert, mapAccumWithKey, empty)
 
-calculate :: String -> Env -> Result
-calculate eq env = let (r, newEnv@(Env vs fs)) = evalPass (parse eq) env
-                       bound = fst $ Map.mapAccumWithKey (evalBound newEnv) Map.empty vs
-                   in Result r vs fs bound
+calculate :: String -> UserPrefs -> Env -> Result
+calculate eq prefs env = let (r, newEnv@(Env vs fs)) = evalPass (parse eq) prefs env
+                             bound = fst $ Map.mapAccumWithKey (evalBound prefs newEnv) Map.empty vs
+                         in Result r vs fs bound
 
-evalBound :: Env -> Map String Decimal -> String -> AST -> (Map String Decimal, AST)
-evalBound _ a _ n@(Number _) = (a, n)
-evalBound env a v ast = (Map.insert v (fst $ evalPass ast env) a, ast)
+evalBound :: UserPrefs -> Env -> Map String Decimal -> String -> AST -> (Map String Decimal, AST)
+evalBound _ _ a _ n@(Number _) = (a, n)
+evalBound prefs env a v ast = (Map.insert v (fst $ evalPass ast prefs env) a, ast)

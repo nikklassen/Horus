@@ -7,7 +7,7 @@ module Calculator.Evaluator.Tests (
 import Calculator.Data.AST
 import Calculator.Data.Env
 import Calculator.Evaluator
-import Calculator.Functions
+import Calculator.Data.Function
 import Calculator.Parser
 import Control.Exception (ErrorCall(..), evaluate)
 import Data.Map (Map)
@@ -49,13 +49,13 @@ tests = [ testGroup "Simple"
         ]
 
 process :: AST -> Decimal
-process ast = fst $ evalPass ast $ Env Map.empty Map.empty
+process ast = fst $ evalPass ast defaultPrefs $ Env Map.empty Map.empty
 
 processVars :: AST -> Map String AST -> (Decimal, Env)
-processVars ast vars = evalPass ast $ Env vars Map.empty
+processVars ast vars = evalPass ast defaultPrefs $ Env vars Map.empty
 
 processFuncs :: AST -> Map String Function -> (Decimal, Env)
-processFuncs ast funcs = evalPass ast $ Env Map.empty funcs
+processFuncs ast funcs = evalPass ast defaultPrefs $ Env Map.empty funcs
 
 int = process [m|0123456789876543210|] @?= 123456789876543210
 
@@ -110,14 +110,14 @@ function = process [m|sin(1)|] @?= sin 1
 userFunction = processFuncs [m|foo(2)|] fooFunc @?= (4, Env Map.empty fooFunc)
                where fooFunc = Map.fromList [("foo", Function ["b"] [m|b + 2|])]
 
-nestedFunction = fst (evalPass [m|f(2)|] env) @?= 2
+nestedFunction = fst (evalPass [m|f(2)|] defaultPrefs env) @?= 2
                  where f = ("f", Function ["a"] [m|z(a)|])
                        z = ("z", Function ["a"] (Var "a"))
                        env = Env Map.empty $ Map.fromList [f, z]
 
 -- The local x variable should be used when evaluating f
 -- and the global x should be used when evaluating inner function m
-varScopes = fst (evalPass [m|f(2)|] env) @?= 13
+varScopes = fst (evalPass [m|f(2)|] defaultPrefs env) @?= 13
             where f = ("f", Function ["x"] [m|x + z(3)|])
                   z = ("z", Function ["a"] [m|x + a|])
                   env = Env (Map.fromList [("x", Number 8)]) $ Map.fromList [f, z]

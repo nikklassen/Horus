@@ -1,13 +1,14 @@
-{-# LANGUAGE OverloadedStrings, DoAndIfThenElse #-}
+{-# LANGUAGE OverloadedStrings, DoAndIfThenElse, RecordWildCards #-}
 
 module TextToMath (
     app
 ) where
 
 import Calculator
-import Calculator.Data.Env
 import Calculator.Data.AST
-import Calculator.Functions (Function, showDeclaration)
+import Calculator.Data.Decimal
+import Calculator.Data.Env
+import Calculator.Data.Function (Function, showDeclaration)
 import Control.Applicative (optional, (<$>))
 import Control.DeepSeq (($!!))
 import Control.Monad (msum)
@@ -19,7 +20,6 @@ import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
-import Calculator.Data.Decimal
 import Happstack.Server hiding (body, result)
 import Serializer()
 import System.UUID.V4 (uuid)
@@ -48,8 +48,8 @@ calc acid = do
                 Just jsonContent -> do
                     let input = fromMaybe "" $ Map.lookup "input" jsonContent
                     userId <- getUserId
-                    User variables functions <- query' acid (UserState.GetUser userId)
-                    result <- liftIO $ getReturnText input $ Env variables (Map.map fst functions)
+                    User{..} <- query' acid (UserState.GetUser userId)
+                    result <- liftIO $ getReturnText input prefs $ Env variables (Map.map fst functions)
                     addCookie Session $ mkCookie "user-id" userId
                     case result of
                         Left err -> do
@@ -58,7 +58,7 @@ calc acid = do
                         Right ans -> do let newVars = vars ans
                                         let newFuncs = addFunctionText input $ copyFunctionText (funcs ans) functions
                                         let addedFuncs = Map.differenceWith (\a b -> if a /= b then Just a else Nothing) newFuncs functions
-                                        update' acid (UserState.SetUser userId $ User newVars newFuncs)
+                                        update' acid (UserState.SetUser userId $ User newVars newFuncs prefs)
                                         let res = jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans)
                                                                           (Map.mapWithKey funcsToJSON addedFuncs)
                                                                           ("result" .= answer ans)
@@ -82,15 +82,16 @@ getUserInfo :: AcidState UserDb -> ServerPart Response
 getUserInfo acid = do
     method GET
     userId <- getUserId
-    User variables functions <- query' acid (UserState.GetUser userId)
+    User{..} <- query' acid (UserState.GetUser userId)
     addCookie Session $ mkCookie "user-id" userId
 
     -- no op calculation to force bound vars to get calculed
-    result <- liftIO $ getReturnText "0" (Env variables (Map.map fst functions))
+    result <- liftIO $ getReturnText "0" prefs (Env variables (Map.map fst functions))
     case result of
         Left err -> ok $ jsonResponse [ "error" .= err ]
         Right ans -> ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON (boundResults ans)) (vars ans)
                                        , "funcs" .= Map.mapWithKey funcsToJSON functions
+                                       , "prefs" .= prefs
                                        ]
     
 varsToJSON :: Map String Decimal -> String -> AST -> Aeson.Value
@@ -139,19 +140,19 @@ modifyUserInfo acid = do
                             Nothing -> False
 
 runAction :: Maybe User -> Map String String -> Maybe User
-runAction (Just (User vs fs)) action
+runAction (Just User{..}) action
     | Map.size action == 2 =
         case Map.lookup "path" action of
             Just p  | "/vars/" `isPrefixOf` p ->
                         let Just varName = stripPrefix "/vars/" p
-                        in if Map.member varName vs then
-                            Just $ User (Map.delete varName vs) fs
+                        in if Map.member varName variables then
+                            Just $ User (Map.delete varName variables) functions prefs
                         else
                             Nothing
                     | "/funcs/" `isPrefixOf` p ->
                         let Just funcName = stripPrefix "/funcs/" p
-                        in if Map.member funcName fs then
-                            Just $ User vs $ Map.delete funcName fs
+                        in if Map.member funcName functions then
+                            Just $ User variables (Map.delete funcName functions) prefs
                         else
                             Nothing
                     | otherwise -> Nothing
@@ -165,10 +166,10 @@ getUserId = do userId <- optional $ lookCookieValue "user-id"
                    Nothing -> show <$> liftIO uuid
                    Just i -> return i
 
-getReturnText :: String -> Env -> IO (Either String Result)
-getReturnText input env = CEL.catch (CEL.evaluate $!! result)
-                                    (\e -> return $ Left $ "Invalid input: " ++ show (e :: CEL.ErrorCall))
-                                    where result = Right $ calculate input env
+getReturnText :: String -> UserPrefs -> Env -> IO (Either String Result)
+getReturnText input prefs env = CEL.catch (CEL.evaluate $!! result)
+                                          (\e -> return $ Left $ "Invalid input: " ++ show (e :: CEL.ErrorCall))
+                                          where result = Right $ calculate input prefs env 
 
 jsonResponse :: [Aeson.Pair] -> Response
 jsonResponse = addHeader "Content-Type" "application/json" . toResponse . Aeson.encode . Aeson.object

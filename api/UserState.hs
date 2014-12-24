@@ -4,7 +4,8 @@ module UserState where
 
 import Calculator.Data.AST (AST(..))
 import Calculator.Data.Decimal ()
-import Calculator.Functions (Function(..))
+import Calculator.Data.Env (UserPrefs(..), defaultPrefs)
+import Calculator.Data.Function (Function(..))
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 import Data.Acid
@@ -14,8 +15,9 @@ import Data.SafeCopy
 import Data.Typeable
 import qualified Data.Map as Map
 
-data User = User { getVars :: Map String AST
-                 , getFuncs :: Map String (Function, String)
+data User = User { variables :: Map String AST
+                 , functions :: Map String (Function, String)
+                 , prefs :: UserPrefs
                  } deriving (Show, Typeable)
 
 data UserDb = UserDb { allUsers :: Map String User
@@ -25,7 +27,7 @@ emptyState :: UserDb
 emptyState = UserDb Map.empty
 
 newUser :: User
-newUser = User Map.empty Map.empty
+newUser = User Map.empty Map.empty defaultPrefs
 
 getUser :: String -> Query UserDb User
 getUser userId = do

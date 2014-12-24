@@ -34,7 +34,6 @@ tests = [ testGroup "Simple" [
             testCase "Equals sign" parseEqls,
             testCase "Bind statement" parseBind,
             testCase "Negative" parseNeg,
-            testCase "Degree sign" parseDeg,
             testCase "Factorial" parseFact
             ]
         , testGroup "Simple - Errors" [
@@ -84,8 +83,6 @@ parseEqls = parse "a = 1" @?= EqlStmt (Var "a") (Number 1)
 parseBind = parse "a := x" @?= BindStmt (Var "a") (Var "x")
 
 parseNeg = parse "1 / -2" @?= OpExpr "/" (Number 1) (Neg (Number 2))
-
-parseDeg = parse "180°" @?= FuncExpr "deg" [Number 180]
 
 parseFact = parse "2^3!" @?= OpExpr "^" (Number 2) (FuncExpr "!" [Number 3])
 

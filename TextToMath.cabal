@@ -13,6 +13,7 @@ executable TextToMath
                        OverloadedStrings,
                        PatternSynonyms,
                        QuasiQuotes,
+                       RecordWildCards,
                        ScopedTypeVariables
                        TemplateHaskell,
                        TypeFamilies,
