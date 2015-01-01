@@ -15,18 +15,18 @@ import Control.Monad (msum)
 import Control.Monad.IO.Class (liftIO)
 import Data.Acid (AcidState)
 import Data.Acid.Advanced (query', update')
-import Data.Aeson ((.=))
+import Data.Aeson hiding (Result, Number)
+import Data.Aeson.Types (parseMaybe, Pair)
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Happstack.Server hiding (body, result)
 import Serializer()
 import System.UUID.V4 (uuid)
 import UserState
 import qualified Control.Exception.Lifted as CEL
-import qualified Data.Aeson as Aeson (encode, decode)
-import qualified Data.Aeson.Types as Aeson hiding (Result)
 import qualified Data.ByteString.Char8 as Char8 (unpack)
 import qualified Data.Map as Map
 
@@ -44,12 +44,13 @@ calc acid = do
         rq <- askRq
         if contentType "application/json" rq then do
             maybeBody <- takeRequestBody rq
-            case Aeson.decode $ unBody $ fromMaybe (Body "") maybeBody :: Maybe (Map String String) of
+            case decode $ unBody $ fromMaybe (Body "") maybeBody :: Maybe Object of
                 Just jsonContent -> do
-                    let input = fromMaybe "" $ Map.lookup "input" jsonContent
+                    let input = parseDefault "" "input" jsonContent
                     userId <- getUserId
                     User{..} <- query' acid (UserState.GetUser userId)
-                    result <- liftIO $ getReturnText input prefs $ Env variables (Map.map fst functions)
+                    let userPrefs = parseDefault prefs "prefs" jsonContent
+                    result <- liftIO $ getReturnText input userPrefs $ Env variables (Map.map fst functions)
                     addCookie Session $ mkCookie "user-id" userId
                     case result of
                         Left err -> do
@@ -58,7 +59,7 @@ calc acid = do
                         Right ans -> do let newVars = vars ans
                                         let newFuncs = addFunctionText input $ copyFunctionText (funcs ans) functions
                                         let addedFuncs = Map.differenceWith (\a b -> if a /= b then Just a else Nothing) newFuncs functions
-                                        update' acid (UserState.SetUser userId $ User newVars newFuncs prefs)
+                                        update' acid (UserState.SetUser userId $ User newVars newFuncs userPrefs)
                                         let res = jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans)
                                                                           (Map.mapWithKey funcsToJSON addedFuncs)
                                                                           ("result" .= answer ans)
@@ -94,14 +95,14 @@ getUserInfo acid = do
                                        , "prefs" .= prefs
                                        ]
     
-varsToJSON :: Map String Decimal -> String -> AST -> Aeson.Value
-varsToJSON _ _ (Number n) = Aeson.object [ "value" .= n ]
-varsToJSON bound v expr =  Aeson.object [ "value" .= (bound Map.! v)
+varsToJSON :: Map String Decimal -> String -> AST -> Value
+varsToJSON _ _ (Number n) = object [ "value" .= n ]
+varsToJSON bound v expr =  object [ "value" .= (bound Map.! v)
                                         , "expr" .= show expr
                                         ]
 
-funcsToJSON :: String -> (Function, String) -> Aeson.Value
-funcsToJSON k (f, text) = Aeson.object [ "decl" .= (k ++ showDeclaration f)
+funcsToJSON :: String -> (Function, String) -> Value
+funcsToJSON k (f, text) = object [ "decl" .= (k ++ showDeclaration f)
                                        , "def" .= text
                                        ]
 
@@ -120,7 +121,7 @@ modifyUserInfo acid = do
         userId <- getUserId
         maybeBody <- takeRequestBody rq
         let b = unBody $ fromMaybe (Body "") maybeBody
-        case Aeson.decode b of
+        case decode b of
             Just values ->
                 if all isRemove values then do
                     user <- query' acid $ UserState.GetUser userId
@@ -171,8 +172,11 @@ getReturnText input prefs env = CEL.catch (CEL.evaluate $!! result)
                                           (\e -> return $ Left $ "Invalid input: " ++ show (e :: CEL.ErrorCall))
                                           where result = Right $ calculate input prefs env 
 
-jsonResponse :: [Aeson.Pair] -> Response
-jsonResponse = addHeader "Content-Type" "application/json" . toResponse . Aeson.encode . Aeson.object
+parseDefault :: FromJSON a => a -> Text -> Object -> a
+parseDefault defaultValue key = fromMaybe defaultValue . parseMaybe (.: key)
+
+jsonResponse :: [Pair] -> Response
+jsonResponse = addHeader "Content-Type" "application/json" . toResponse . encode . object
 
 contentType :: String -> Request -> Bool
 contentType ct rq = ct `isPrefixOf` rqCt rq

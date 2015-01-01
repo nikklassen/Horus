@@ -3,6 +3,7 @@
 module Main where
 
 import Calculator.Data.AST (AST(..))
+import Calculator.Data.Env (defaultPrefs)
 import Calculator.Data.Function (Function(..))
 import Calculator.Parser
 import Control.Exception
@@ -32,10 +33,12 @@ testState :: UserDb
 testState = UserDb $ Map.fromList
                 [ ("testUser", User
                     (Map.fromList [("a", Number 2), ("y", Var "a")])
-                    (Map.fromList [("a", a)]))
+                    (Map.fromList [("a", a)])
+                    defaultPrefs)
                 , ("testUser2", User
                     (Map.fromList [("b", Number 3), ("z", Var "b")])
-                    (Map.fromList [("b", b)]))
+                    (Map.fromList [("b", b)])
+                    defaultPrefs)
                 ]
             where a = (Function ["x"] [m|2 + x|], "x + 2")
                   b = (Function ["x"] [m|3 + x|], "x + 3")

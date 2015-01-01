@@ -47,7 +47,12 @@
         $scope.submit = function() {
             $http.post(
                 'api/calculate',
-                { input: $scope.input },
+                {
+                    input: $scope.input,
+                    prefs: {
+                        isRadians: $scope.angleMode === 'Rad'
+                    }
+                },
                 { headers: { 'Content-Type': 'application/json' } }
             ).success(function(data) {
                 addToEnv(data)
@@ -89,14 +94,40 @@
             })
         }
 
+        // Degree mode radio buttons
+        $scope.angleModes = ['Deg', 'Rad']
+
         // Load initial view
         $http.get('api/userInfo')
-        .success(addToEnv)
+        .success(function(data) {
+            $scope.angleMode = data.prefs.isRadians ? 'Rad' : 'Deg'
+            addToEnv({
+                funcs: data.funcs,
+                vars: data.vars
+            })
+        })
     })
 
     .filter('objectToArray', function() {
         return function (obj) {
             return _.toArray(obj)
+        }
+    })
+
+    .directive('buttonsRadio', function() {
+        return {
+            restrict: 'E',
+            scope: { model: '=', options:'='},
+            controller: function($scope){
+                $scope.activate = function(option){
+                    $scope.model = option
+                };      
+            },
+            template: '<button type="button" class="btn btn-default" '+
+                        'ng-class="{active: option == model}" '+
+                        'ng-repeat="option in options" '+
+                        'ng-click="activate(option)">{{option}}'+
+                      '</button>'
         }
     })
 }())

@@ -3,11 +3,11 @@ exports.config = {
         'e2e/*.js'
     ],
 
+    directConnect: true,
+
     capabilities: {
         'browserName': 'chrome'
     },
-
-    chromeOnly: true,
 
     baseUrl: 'http://localhost/',
 

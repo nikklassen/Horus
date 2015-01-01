@@ -8,6 +8,7 @@ import Calculator.Data.Decimal
 import Calculator.Data.Function
 import Data.Text
 import Data.Aeson
+import Data.Aeson.TH (deriveJSON, defaultOptions)
 
 instance ToJSON Decimal where
     toJSON = toValue
@@ -15,8 +16,7 @@ instance ToJSON Decimal where
 instance ToJSON Function where
     toJSON = toValue
 
-instance ToJSON UserPrefs where
-    toJSON UserPrefs{..} = object [ "isRadians" .= isRadians ]
-
 toValue :: Show a => a -> Value
 toValue = String . pack . show
+
+$(deriveJSON defaultOptions ''UserPrefs)

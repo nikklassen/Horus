@@ -4,6 +4,9 @@ var expect = require('expect.js')
 var request = require('supertest')
 
 // Test server data
+// Preferences
+// isRadians: true
+//
 // User name: testUser
 // Vars:      a = 2.0,
 //            y := a
@@ -143,6 +146,28 @@ describe('TextToMath Api', function() {
                 })
         })
 
+        it('should overwrite the current user prefs', function(done) {
+            request('localhost')
+                .post('/api/calculate')
+                .set('Cookie', 'user-id=testUser2')
+                .send({
+                    input: 'sin(90)',
+                    prefs: {
+                        isRadians: false
+                    }
+                 })
+                .expect(200)
+                .end(function(err, res) {
+                    if (err) {
+                        throw err
+                    }
+
+                    expect(res.body.result).to.eql(1)
+
+                    done()
+                })
+        })
+
     })
 
     describe('UserInfo', function() {
@@ -173,6 +198,9 @@ describe('TextToMath Api', function() {
                                 decl: 'a(x)',
                                 def: 'x + 2'
                             }
+                        },
+                        prefs: {
+                            isRadians: true
                         }
                     })
 
@@ -280,14 +308,12 @@ describe('TextToMath Api', function() {
                                 throw err
                             }
 
-                            expect(res.body).to.eql({
-                                vars: {
-                                    b: {
-                                        value: 3
-                                    }
-                                },
-                                funcs: {}
+                            expect(res.body.vars).to.eql({
+                                b: {
+                                    value: 3
+                                }
                             })
+                            expect(res.body.funcs).to.eql({})
 
                             done()
                         })

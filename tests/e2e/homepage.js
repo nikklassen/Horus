@@ -28,7 +28,7 @@ var Homepage = function() {
     this.result = element(by.binding('result'))
     this.submitBtn = element(by.id('submit'))
     this.resetBtn = element(by.id('reset'))
-
+    this.angleModes = element(by.tagName('buttons-radio'))
 }
 
 Homepage.prototype = {
@@ -50,6 +50,14 @@ Homepage.prototype = {
 
     getDefinition: function(type, name) {
         return new Definition(type, name)
+    },
+
+    getAngleMode: function() {
+        return this.angleModes.element(by.css('.active')).getText()
+    },
+
+    setAngleMode: function(mode) {
+        this.angleModes.element(by.partialButtonText(mode)).click()
     }
 }
 
@@ -65,10 +73,9 @@ Homepage.prototype = {
 // Bound:     z := b
 describe('homepage', function () {
 
-    beforeEach(function() {
-        var ptor = protractor.getInstance()
+    before(function() {
         browser.get('/')
-        ptor.manage().addCookie('user-id', 'testUser')
+        browser.manage().addCookie('user-id', 'testUser')
     }, 10000)
 
     it('should calculate 1 + 1', function() {
@@ -168,7 +175,7 @@ describe('homepage', function () {
 
     it('should reset the user\'s environment', function() {
 
-        protractor.getInstance().manage().addCookie('user-id', 'testUser2')
+        browser.manage().addCookie('user-id', 'testUser2')
 
         var homepage = new Homepage()
         homepage.get()
@@ -178,5 +185,23 @@ describe('homepage', function () {
         homepage.reset()
 
         expect(element.all(by.repeater('v in env')).count()).to.eventually.equal(0)
+    })
+
+    it('should have the correct angle mode', function() {
+
+        var homepage = new Homepage()
+        homepage.get()
+
+        // Starts off in radians
+        expect(homepage.getAngleMode()).to.eventually.equal('Rad')
+
+        // Calculation saves the user's preference
+        homepage.setAngleMode('Deg')
+        homepage.setInput('1 + 1')
+        homepage.calculate()
+
+        // Refresh page to ensure preference persists
+        homepage.get()
+        expect(homepage.getAngleMode()).to.eventually.equal('Deg')
     })
 })
