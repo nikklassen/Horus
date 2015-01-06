@@ -5,10 +5,11 @@
         <link rel="stylesheet" href="css/homepage.css" />
         <script src="js/lib/angular.min.js"></script>
         <script src="js/lib/angular-sanitize.min.js"></script>
+        <script src="js/lib/angular-modal-service.min.js"></script>
         <script src="js/lib/lodash.min.js"></script>
         <script src="js/app.js"></script>
     </head>
-    <body>
+    <body ng-controller="TextToMathCtrl">
         <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="container">
                 <div class="navbar-header">
@@ -18,13 +19,20 @@
                 </div>
             </div>
         </div>
-        <div class="container" ng-controller="TextToMathCtrl">
+        <div class="container">
             <div class="starter-template">
                 <div style="float: left; width: 80%">
                     <div style="margin: 0 auto; width: 90%">
                         <div id="toolbar">
                             <label for="input" class="pull-left">Enter your equation below</label>
-                            <buttons-radio class="btn-group pull-right" data-toggle="buttons-radio" model="angleMode" options="angleModes"></buttons-radio>
+                            <div class="btn-toolbar pull-right">
+                                <buttons-radio id="angle-btns" class="btn-group" data-toggle="buttons-radio" model="angleMode" options="angleModes"></buttons-radio>
+                                <div class="btn-group">
+                                    <button id="help-btn" type="button" class="btn btn-default" ng-click="showModal()">
+                                        &#xe085;
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <form ng-submit="submit()">
                             <div class="form-group">

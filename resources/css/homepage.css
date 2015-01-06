@@ -12,14 +12,14 @@ body {
     line-height: 40px;
 }
 
-#toolbar .btn-group {
-    padding-top: 2px;
-}
-
 #submit {
     position: relative;
     top: 10px;
     width: 100px;
+}
+
+#help-btn {
+    font-family: 'Glyphicons Halflings';
 }
 
 .error {

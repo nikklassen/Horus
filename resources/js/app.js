@@ -1,9 +1,13 @@
 (function () {
     'use strict';
 
-    angular.module('TextToMathApp', ['ngSanitize'])
+    var app = angular.module('TextToMathApp', ['ngSanitize', 'angularModalService'])
 
-    .controller('TextToMathCtrl', function ($scope, $http) {
+    app.controller('ModalController', ['$scope', 'close', function ($scope, close) {
+        $scope.close = close
+    }])
+
+    app.controller('TextToMathCtrl', ['$scope', '$http', 'ModalService', function ($scope, $http, ModalService) {
 
         $scope.env = {}
         $scope.resultClass = ''
@@ -97,6 +101,13 @@
         // Degree mode radio buttons
         $scope.angleModes = ['Deg', 'Rad']
 
+        $scope.showModal = function() {
+            ModalService.showModal({
+                templateUrl: 'help.html',
+                controller: 'ModalController'
+            })
+        }
+
         // Load initial view
         $http.get('api/userInfo')
         .success(function(data) {
@@ -106,7 +117,7 @@
                 vars: data.vars
             })
         })
-    })
+    }])
 
     .filter('objectToArray', function() {
         return function (obj) {

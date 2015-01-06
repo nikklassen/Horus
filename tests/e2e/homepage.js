@@ -204,4 +204,14 @@ describe('homepage', function () {
         homepage.get()
         expect(homepage.getAngleMode()).to.eventually.equal('Deg')
     })
+
+    it('should show the help dialog', function() {
+
+        var homepage = new Homepage()
+        homepage.get()
+
+        element(by.id('help-btn')).click()
+
+        assert.eventually.equal(element(by.css('.modal-dialog')).isPresent(), true)
+    })
 })
