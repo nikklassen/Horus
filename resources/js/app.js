@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    var app = angular.module('TextToMathApp', ['ngSanitize', 'angularModalService'])
+    var app = angular.module('TextToMathApp', ['ngSanitize', 'angularModalService', 'angularLocalStorage'])
 
     app.controller('ModalController', ['$scope', 'close', function ($scope, close) {
         $scope.close = close
     }])
 
-    app.controller('TextToMathCtrl', ['$scope', '$http', 'ModalService', function ($scope, $http, ModalService) {
+    app.controller('TextToMathCtrl', ['$scope', '$http', 'ModalService', 'storage', function ($scope, $http, ModalService, storage) {
 
         $scope.env = {}
         $scope.resultClass = ''
@@ -48,6 +48,17 @@
 
         $scope.result = ''
         $scope.input = ''
+        storage.bind($scope, 'logs', { defaultValue: [] })
+
+        $scope.setInput = function(text) {
+            $scope.input = text
+            document.getElementById('input').focus()
+        }
+
+        $scope.clearLogs = function() {
+            $scope.logs = []
+        }
+
         $scope.submit = function() {
             $http.post(
                 'api/calculate',
@@ -62,6 +73,16 @@
                 addToEnv(data)
                 $scope.result = data.result
                 $scope.resultClass = ''
+
+                // Good limit for now, could be configurable later
+                if ($scope.logs.length === 10) {
+                    $scope.logs.pop()
+                }
+
+                $scope.logs.splice(0, 0, {
+                    input: $scope.input,
+                    result: data.result
+                })
             }).error(function(data) {
                 $scope.result = data.error
                 var errPos = data.error.match(/position (\d+)/)

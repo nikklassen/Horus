@@ -25,10 +25,11 @@ Definition.prototype = {
 var Homepage = function() {
 
     this.input = element(by.model('input'))
-    this.result = element(by.binding('result'))
+    this.result = element(by.id('result'))
     this.submitBtn = element(by.id('submit'))
     this.resetBtn = element(by.id('reset'))
     this.angleModes = element(by.tagName('buttons-radio'))
+    this.clearLogsBtn = element(by.id('clear-logs-btn'))
 }
 
 Homepage.prototype = {
@@ -46,6 +47,10 @@ Homepage.prototype = {
 
     reset: function() {
         this.resetBtn.click()
+    },
+
+    clearLogs: function() {
+        this.clearLogsBtn.click()
     },
 
     getDefinition: function(type, name) {
@@ -213,5 +218,44 @@ describe('homepage', function () {
         element(by.id('help-btn')).click()
 
         assert.eventually.equal(element(by.css('.modal-dialog')).isPresent(), true)
+    })
+
+    it('should add the calculation to the log', function() {
+
+        var homepage = new Homepage()
+        homepage.get()
+
+        homepage.setInput('2 * 3')
+        homepage.calculate();
+
+        assert.eventually.equal(element(by.repeater('log in logs').row(0).column('input')).getText(), '2 * 3')
+    })
+
+    it('should only keep 10 logs', function() {
+
+        var homepage = new Homepage()
+        homepage.get()
+
+        homepage.setInput('1 + 1')
+        for (var i = 0; i <= 11; i++) {
+            homepage.calculate();
+        }
+
+        assert.eventually.equal(element.all(by.repeater('log in logs')).count(), 10)
+    })
+
+    it('should clear the logs', function() {
+
+        var homepage = new Homepage()
+        homepage.get()
+
+        homepage.setInput('1 + 1')
+        homepage.calculate()
+
+        expect(element.all(by.repeater('log in logs')).count()).to.eventually.be.above(0)
+
+        homepage.clearLogs()
+
+        assert.eventually.equal(element.all(by.repeater('log in logs')).count(), 0)
     })
 })
