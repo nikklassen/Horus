@@ -31,6 +31,7 @@ tests = [ testGroup "Simple"
             , testCase "Assignment" eql
             , testCase "Bind" bind
             , testCase "Bind assignemnt" bindStmt
+            , testCase "Pi" piTest
             ]
         , testGroup "Error"
             [ testCase "Undefined var" errorVar
@@ -83,6 +84,8 @@ bind = processVars [m|a + 2|] vars @?= (4, Env vars Map.empty)
 
 bindStmt = processVars [m|a := b|] vars @?= (2, Env vars Map.empty)
            where vars = Map.fromList [("b", Number 2), ("a", Var "b")]
+
+piTest = process [m|pi * 3|] @?= pi * 3
 
 errorVar = assertRaises "" (ErrorCall "Use of undefined variable \"a\"")
                            (evaluate $ process (Var "a"))

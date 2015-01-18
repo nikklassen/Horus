@@ -20,6 +20,7 @@ tests = [ testCase "Duplicate parameter" dupParam
         , testCase "Use of global var" useGlobal
         , testCase "Recursive definition of bound var" recursiveBind
         , testCase "Recursive function definition" recursiveFunc
+        , testCase "Assigment to reserved var name" reserved
         , testCase "No op" noop
         ]
 
@@ -44,6 +45,8 @@ recursiveBind = deepAssertRaises "Recursive use of bound variable a" (synCheckPa
 recursiveFunc = deepAssertRaises "Recursive use of function f" (synCheckPass stmt env)
                 where stmt = [m|f(a) = m(a)|]
                       env = Env Map.empty $ Map.fromList [("m", Function ["a"] (FuncExpr "f" [Var "a"]))]
+
+reserved = deepAssertRaises "Cannot assign to reserved variable name e" $ synCheckPass [m|e = 3|] emptyEnv
 
 noop = synCheckPass expr emptyEnv @?== expr
        where expr = [m|2 + 2|]

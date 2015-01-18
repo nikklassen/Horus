@@ -19,7 +19,16 @@ synCheckPass (EqlStmt f@(FuncExpr fName ps) rhs) env =
             (Right params) ->
                 let funcCheck = checkForRecursiveFunc fName env . checkUndef params env
                 in EqlStmt f $!! astMap funcCheck rhs
-synCheckPass (BindStmt (Var b) rhs) env = astMap (checkForRecursiveDef b env) rhs
+synCheckPass (BindStmt (Var b) rhs) env = 
+        if b `elem` ["pi", "e"] then
+            error $ "Cannot bind to reserved variable name " ++ b
+        else
+            astMap (checkForRecursiveDef b env) rhs
+synCheckPass ast@(EqlStmt (Var v) _) _ =
+        if v `elem` ["pi", "e"] then
+            error $ "Cannot assign to reserved variable name " ++ v
+        else
+            ast
 synCheckPass ast _ = ast
 
 checkUndef :: Set String -> Env -> AST -> AST

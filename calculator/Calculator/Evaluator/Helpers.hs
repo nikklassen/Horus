@@ -7,19 +7,21 @@ module Calculator.Evaluator.Helpers (
 ) where
 
 import Calculator.Data.AST
-import Calculator.Data.Decimal ()
+import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function
 import Calculator.Functions
 import Control.Applicative ((<$>))
-import Calculator.Data.Decimal
-import qualified Data.Map as Map (fromList)
 import Control.Monad.RWS
+import qualified Data.Map as Map (fromList)
 
 eval :: AST -> ScopeRWS Decimal
 eval (Number n) = return n
 
-eval (Var var) = getEnvVar var >>= eval
+eval (Var var)
+    | var == "pi" = return pi
+    | var == "e" = return $ exp 1
+    | otherwise = getEnvVar var >>= eval
 
 eval (Neg e) = negate <$> eval e
 
