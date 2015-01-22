@@ -1,13 +1,13 @@
 (function () {
     'use strict';
 
-    var app = angular.module('TextToMathApp', ['ngSanitize', 'angularModalService', 'angularLocalStorage'])
+    var app = angular.module('HorusApp', ['ngSanitize', 'angularModalService', 'angularLocalStorage'])
 
     app.controller('ModalController', ['$scope', 'close', function ($scope, close) {
         $scope.close = close
     }])
 
-    app.controller('TextToMathCtrl', ['$scope', '$http', 'ModalService', 'storage', function ($scope, $http, ModalService, storage) {
+    app.controller('HorusCtrl', ['$scope', '$http', 'ModalService', 'storage', function ($scope, $http, ModalService, storage) {
 
         $scope.env = {}
         $scope.resultClass = ''

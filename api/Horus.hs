@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DoAndIfThenElse, RecordWildCards #-}
 
-module TextToMath (
+module Horus (
     app
 ) where
 

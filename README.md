@@ -1,8 +1,8 @@
-# TextToMath
+# Horus
 
-[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/nikklassen/TextToMath?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/nikklassen/Horus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-TextToMath is a simple mathematical programming language/scientific calculator.  The main advantage over a traditional scientific calculator is that functions and variables are supported, and tied to the user's session.  A working instance can be found [here](http://nikklassen.ca/TextToMath).
+Horus is a simple mathematical programming language/scientific calculator.  The main advantage over a traditional scientific calculator is that functions and variables are supported, and tied to the user's session.  A working instance can be found [here](http://nikklassen.ca/Horus).
 
 ## Variables
 
@@ -33,10 +33,10 @@ the function `f` will add the value of its parameter `x` to the current value of
 
 # Installation
 
-TextToMath requires `GHC >= 7.8.*`, and `node.js` for tests.  [Here](https://gist.github.com/yantonov/10083524) are Ubuntu instructions for installing `GHC` if you need a place to start.  Package installation for TextToMath can be done using cabal and npm.  For example
+Horus requires `GHC >= 7.8.*`, and `node.js` for tests.  [Here](https://gist.github.com/yantonov/10083524) are Ubuntu instructions for installing `GHC` if you need a place to start.  Package installation for Horus can be done using cabal and npm.  For example
 
 ```bash
-# Working directory is the clone of TextToMath
+# Working directory is the clone of Horus
 cabal sandbox init
 cabal install --only-dependencies
 
@@ -59,16 +59,16 @@ Ensure that the local `node_modules` is in your path, or install the `protractor
 Static files are all in `resources`, so these can be served with your method of choice.  The default port for the server executable is 3000, and needs to be served on the same port as the static files, under the path `/api`.  A sample `nginx` config is
 
 ```nginx
-location ^~ /TextToMath {
-	alias $CHECKOUT_DIR/TextToMath/resources/html;
+location ^~ /Horus {
+	alias $CHECKOUT_DIR/Horus/resources/html;
 	
 	location ~* \.(css|js)$ {
-		root $CHECKOUT_DIR/TextToMath/resources/;
-	    rewrite ^/TextToMath/(.*)$ /$1 break;
+		root $CHECKOUT_DIR/Horus/resources/;
+	    rewrite ^/Horus/(.*)$ /$1 break;
 	}
 	
 	location ~ api/ {
-	    rewrite ^/TextToMath/api/(.*) /$1 break;
+	    rewrite ^/Horus/api/(.*) /$1 break;
 	    proxy_pass http://localhost:3000;
 	}
 }

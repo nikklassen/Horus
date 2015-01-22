@@ -3,7 +3,7 @@ module Main where
 import Control.Exception
 import Data.Acid
 import Happstack.Server
-import TextToMath
+import Horus
 import UserState
 
 config :: Conf
@@ -19,4 +19,4 @@ main = bracket (openLocalState UserState.emptyState)
                closeAcidState
                (\acid -> simpleHTTP config $ do
                    decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096)
-                   TextToMath.app acid)
+                   Horus.app acid)

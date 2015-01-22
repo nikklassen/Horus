@@ -16,7 +16,7 @@ var request = require('supertest')
 // Vars:      b = 3.0
 //            z := b
 // Functions: b(x) = x + 3
-describe('TextToMath Api', function() {
+describe('Horus Api', function() {
 
     describe('Calculate', function() {
 

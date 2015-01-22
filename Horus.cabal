@@ -1,11 +1,11 @@
-name:                TextToMath
+name:                Horus
 version:             0.1.0.0
-homepage:            http://github.com/nikklassen/TextToMath
+homepage:            http://github.com/nikklassen/Horus
 author:              Nik Klassen
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable TextToMath
+executable Horus
   main-is:             api/Server.hs
   other-extensions:    DeriveDataTypeable,
                        DeriveGeneric,

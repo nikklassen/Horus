@@ -10,7 +10,7 @@ import Control.Exception
 import Data.Acid
 import Data.Acid.Memory
 import Happstack.Server
-import TextToMath
+import Horus
 import UserState
 import qualified Data.Map as Map (fromList)
 
@@ -27,7 +27,7 @@ main = bracket (openMemoryState testState)
                closeAcidState
                (\acid -> simpleHTTP config $ do
                    decodeBody (defaultBodyPolicy "/tmp/" 4096 4096 4096)
-                   TextToMath.app acid)
+                   Horus.app acid)
 
 testState :: UserDb
 testState = UserDb $ Map.fromList
