@@ -1,3 +1,5 @@
+/* Page layout */
+
 body {
     padding-top: 50px;
     box-sizing: border-box;
@@ -5,17 +7,87 @@ body {
 }
 
 .starter-template {
-    padding: 40px 15px;
+    padding: 15px 15px;
     text-align: center;
+    width: 100%;
     height: 100%;
     position: relative;
 }
 
-#log-table {
-    position: relative;
-    margin-top: 30px;
+/* Calculation controls */
+
+#toolbar {
+    height: 40px;
+    line-height: 40px;
+    text-align: left;
+}
+
+#toolbar .btn-toolbar {
+    float: right;
+}
+
+#submit {
     width: 100%;
-    height: 60%;
+}
+
+#result-container {
+    position: relative;
+    border: 1px solid black;
+    min-height: 40px;
+    width: 100%;
+}
+
+#result-title {
+    position: absolute;
+    left: 10px;
+    top: -10px;
+    background-color: white;
+    height: 10px;
+    width: 50px;
+}
+
+#error-result {
+    color: red;
+    width: 100%;
+    margin-top: 10px;
+    display: inline-block;
+    overflow-wrap: break-word;
+}
+
+#result {
+    width: 100%;
+}
+
+.result-formatted {
+    max-width: 79%;
+    margin-top: 10px;
+    display: inline-block;
+    overflow-wrap: break-word;
+}
+
+#result button {
+    position: absolute;
+    height: 30px;
+    right: 5px;
+    top: 5px;
+    min-width: 10%;
+}
+
+#help-btn {
+    font-family: 'Glyphicons Halflings';
+}
+
+/* Logs */
+
+#log-table-row {
+    max-height: 60%;
+    overflow-y: auto;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+#log-table {
+    width: 100%;
 }
 
 #log-table > div:nth-child(1) {
@@ -34,29 +106,25 @@ body {
     word-wrap: break-word;
 }
 
-#toolbar {
-    height: 40px;
-    line-height: 40px;
+.glyphicon-edit {
+    cursor: pointer;
 }
 
-#submit {
-    position: relative;
-    top: 10px;
-    width: 100px;
+#clear-logs-btn {
+    width: 100%;
 }
 
-#result {
-    height: 20px;
-    line-height: 20px;
-    display: block;
+/* Right panel */
+
+#user-vars {
+    margin: 0 auto;
+    white-space: nowrap;
+    table-layout: fixed;
 }
 
-#help-btn {
-    font-family: 'Glyphicons Halflings';
-}
-
-.error {
-    color: red;
+#user-vars td {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .glyphicon-remove {
@@ -77,6 +145,16 @@ tr:hover .glyphicon-remove {
     border-left: 0;
     border-right: 0;
 }
+
+#reset-row {
+    margin-top: 10px;
+}
+
+#reset {
+    width: 100%;
+}
+
+/* Other */
 
 footer {
     text-align: center;

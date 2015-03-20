@@ -8,7 +8,7 @@
     </head>
     <body ng-controller="HorusCtrl">
         <div class="navbar navbar-inverse navbar-fixed-top">
-            <div class="container">
+            <div class="fluid-container">
                 <div class="navbar-header">
                     <div class="navbar-brand">
                         Horus
@@ -16,13 +16,13 @@
                 </div>
             </div>
         </div>
-        <div class="container">
-            <div class="starter-template">
-                <div class="row">
-                    <div id="left-panel" class="col-lg-8">
-                        <div id="toolbar">
-                            <label for="input" class="pull-left">Enter your equation below</label>
-                            <div class="btn-toolbar pull-right">
+        <div class="starter-template container">
+            <div class="row">
+                <div id="left-panel" class="col-lg-7">
+                    <div id="toolbar" class="row">
+                        <label for="input" class="col-md-6">Enter your equation below</label>
+                        <div class="col-md-6">
+                            <div class="btn-toolbar">
                                 <buttons-radio id="angle-btns" class="btn-group" data-toggle="buttons-radio" model="angleMode" options="angleModes"></buttons-radio>
                                 <div class="btn-group">
                                     <button id="help-btn" type="button" class="btn btn-default" ng-click="showModal()">
@@ -31,67 +31,98 @@
                                 </div>
                             </div>
                         </div>
-                        <form ng-submit="submit()">
+                    </div>
+                    <div class="row">
+                        <form ng-submit="submit()" class="form-horizontal col-md-12">
                             <div class="form-group">
-                                <input type="textarea" id="input" ng-model="input" class="form-control" autocomplete="off" focus-on="focusInput">
+                                <div class="col-md-10">
+                                    <div class="input-group">
+                                        <div class="input-group-addon"><img src="integral.svg" height="20px"></div>
+                                        <input type="textarea" id="input" ng-model="input" class="form-control" autocomplete="off" focus-on="focusInput">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" id="submit" class="btn btn-primary">Calculate</button>
+                                </div>
                             </div>
-                            <button type="submit" id="submit" class="btn btn-default">Calculate</button>
                         </form>
-                        <span id="result" ng-class="resultClass" ng-bind-html="result"></span>
-                        <div id="log-table">
-                            <div>
-                                <table class="table table-bordered">
-                                    <colgroup span="3">
-                                        <col width="45%">
-                                        <col width="5%">
-                                        <col width="50%">
-                                    </colgroup>
-                                    <thead>
-                                        <tr>
-                                            <th>Input</th>
-                                            <th></th>
-                                            <th>Result</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr ng-repeat="log in logs">
-                                            <td>{{log.input}}</td>
-                                            <td>
-                                                <span class="glyphicon glyphicon-chevron-up pull-right" ng-click="setInput(log.input)">
-                                                    <span class="sr-only">Copy to input</span>
-                                                </span>
-                                            </td>
-                                            <td>{{log.result}}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="result-container">
+                                <div id="result-title">
+                                    <span>Result</span>
+                                </div>
+                                <number id="result" ng-hide="hasError" value="result"></number>
+                                <span id="error-result" ng-show="hasError" ng-bind-html="error"></span>
                             </div>
-                            <button id="clear-logs-btn" class="btn btn-default pull-right" ng-click="clearLogs()">
+                        </div>
+                    </div>
+                    <div id="log-table-row" class="row">
+                        <div id="log-table" class="col-md-12">
+                            <table class="table table-bordered">
+                                <colgroup span="3">
+                                    <col width="5%">
+                                    <col width="45%">
+                                    <col width="50%">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Input</th>
+                                        <th>Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="log in logs">
+                                        <td>
+                                            <span class="glyphicon glyphicon-edit" ng-click="setInput(log.input)">
+                                                <span class="sr-only">Copy to input</span>
+                                            </span>
+                                        </td>
+                                        <td>{{log.input}}</td>
+                                        <td>{{log.result | num }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2 col-md-offset-10">
+                            <button id="clear-logs-btn" class="btn btn-default" ng-click="clearLogs()">
                                 Clear logs
                             </button>
                         </div>
                     </div>
-                    <div id="right-panel" class="col-lg-4">
-                        <table style="margin: 0 auto" class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Value</th>
+                </div>
+                <div id="right-panel" class="col-lg-5">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="user-vars" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tr ng-repeat="v in env | objectToArray | orderBy: 'name'" id="{{v.id}}">
+                                    <td>
+                                        {{v.name}}
+                                    </td>
+                                    <td>
+                                        {{v.value}}
+                                        <a ng-click="remove(v)">
+                                            <span class="glyphicon glyphicon-remove"></span>
+                                        </a>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tr ng-repeat="v in env | objectToArray | orderBy: 'name'" id="{{v.id}}">
-                                <td>
-                                    {{v.name}}
-                                </td>
-                                <td>
-                                    {{v.value}}
-                                    <a ng-click="remove(v)">
-                                        <span class="glyphicon glyphicon-remove"></span>
-                                    </a>
-                                </td>
-                            </tr>
-                        </table>
-                        <button style="margin-top: 5px" id="reset" ng-click="reset()" class="btn btn-danger">Reset</button>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="reset-row" class="row">
+                        <div class="col-md-2 col-md-offset-10">
+                            <button id="reset" ng-click="reset()" class="btn btn-danger">Reset</button>
+                        </div>
                     </div>
                 </div>
             </div>

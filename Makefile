@@ -21,7 +21,7 @@ test_server: $(TESTDIR)/TestServer.hs | $(BINDIR)
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/test_server
 
 .PHONY: tests
-tests: int_tests e2e_tests api_tests
+tests: int_tests e2e_tests api_tests unit_tests
 
 int_tests: $(TESTDIR)/integration/TestSuite.hs | $(BINDIR)
 		@echo "Building integration tests"
@@ -38,6 +38,9 @@ api_tests: test_server
 		$(StartTestServer)
 		-mocha tests/api -R spec
 		$(KillTestServer)
+
+unit_tests:
+		-karma start tests/karma.conf.js
 
 $(OBJDIR) $(BINDIR):
 		@mkdir -p $@

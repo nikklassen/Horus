@@ -26,6 +26,7 @@ var Homepage = function() {
 
     this.input = element(by.model('input'))
     this.result = element(by.id('result'))
+    this.errorResult = element(by.id('error-result'))
     this.submitBtn = element(by.id('submit'))
     this.resetBtn = element(by.id('reset'))
     this.angleModes = element(by.tagName('buttons-radio'))
@@ -79,6 +80,7 @@ Homepage.prototype = {
 describe('homepage', function () {
 
     before(function() {
+        browser.driver.manage().window().setSize(1280, 1024);
         browser.get('/')
         browser.manage().addCookie('user-id', 'testUser')
     }, 10000)
@@ -104,8 +106,7 @@ describe('homepage', function () {
 
         homepage.calculate()
 
-        expect(homepage.result.getText()).to.eventually.equal('Invalid input: at position 3\n1 =')
-        expect(homepage.result.getAttribute('class')).to.eventually.contain('error')
+        expect(homepage.errorResult.getText()).to.eventually.equal('Invalid input: at position 3\n1 = ...')
     })
 
     it('should have existing variables', function() {
@@ -172,9 +173,10 @@ describe('homepage', function () {
         homepage.get()
 
         var v = homepage.getDefinition('vars', 'y')
+        assert.eventually.equal(v.isPresent(), true);
 
         // Click the 'X' button
-        v.element(by.css('span')).click()
+        v.element(by.css('.glyphicon-remove')).click()
         assert.eventually.equal(v.isPresent(), false)
     })
 
