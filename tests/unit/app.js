@@ -12,6 +12,10 @@ describe('HorusApp', function() {
 
     describe('Num filter', function() {
 
+        it('should not change 0.0', function() {
+            expect($num('0.0')).to.equal('0.0')
+        })
+
         it('should add commas for numbers below threshold with decimal', function() {
             expect($num('10000000.')).to.equal('10,000,000.')
         })

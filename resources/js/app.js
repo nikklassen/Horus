@@ -181,7 +181,7 @@
 
             // 0 or 0.000
             if (!v.match(/[1-9]/)) {
-                return;
+                return v;
             }
 
             var firstNum = v.match(/[1-9]/).index
