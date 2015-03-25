@@ -6,7 +6,12 @@ TESTDIR = tests
 
 LANGUAGE = -XQuasiQuotes -XTemplateHaskell
 WARNINGS = -Wall
-GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fhpc -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d/ $(LANGUAGE) $(WARNINGS)
+GHC_OPTIONS = -hidir obj -odir obj -O -j4 -fhpc $(LANGUAGE) $(WARNINGS)
+
+ifneq ($(wildcard ./.cabal-sandbox/.),)
+GHC_OPTIONS += -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d/
+endif
+
 INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
@@ -52,4 +57,4 @@ clean:
 .PHONY: tags
 tags:
 		@echo "Making tags"
-		@hothasktags $(LANGUAGE) -O tags `find {calculator,api} -name '*.hs'`
+		@hothasktags $(LANGUAGE) -O tags `find calculator api -name '*.hs'`
