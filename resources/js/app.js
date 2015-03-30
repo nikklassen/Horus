@@ -192,7 +192,9 @@
 
             // 1 > v > 0
             if (dIdx - firstNum < 0) {
-                s += v[firstNum] + '.' + v.slice(firstNum + 1)
+                var trailingDigits = firstNum === v.length - 1 ? '' : '.' + v.slice(firstNum + 1);
+
+                s += v[firstNum] + trailingDigits
                 s = truncate(s, digits);
                 s += 'e' + (dIdx - firstNum);
             }

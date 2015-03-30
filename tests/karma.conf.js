@@ -4,12 +4,6 @@ module.exports = function(config) {
 
     frameworks: ['mocha', 'chai'],
 
-    client: {
-        mocha: {
-            reporter: 'spec'
-        }
-    },
-
     files: [
         'tests/test_libs/angular.min.js',
         'tests/test_libs/*.js',
@@ -18,7 +12,7 @@ module.exports = function(config) {
         'tests/unit/*.js'
     ],
 
-    reporters: ['progress'],
+    reporters: ['spec'],
     port: 9876,
     colors: true,
     autoWatch: false,

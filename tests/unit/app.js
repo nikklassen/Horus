@@ -43,5 +43,9 @@ describe('HorusApp', function() {
         it('should truncate negative exponent', function() {
             expect($num('0.00000123456789', 4)).to.equal('1.2345e-6')
         })
+
+        it('should not add trailing zero', function() {
+            expect($num('0.0001')).to.equal('1e-4')
+        })
     })
 })
