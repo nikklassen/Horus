@@ -18,11 +18,11 @@
 }
 
 .dl-horizontal dt {
-    width: 100px;
+    width: 140px;
 }
 
 .dl-horizontal dd {
-    margin-left: 120px;
+    margin-left: 160px;
 }
 
 #fade {
@@ -58,7 +58,13 @@
                 <p>Functions work as usual in a programming language, with local parameters shadowing global variables. For example, in</p>
                 <pre>a = 4
 f(x) = x + a</pre>
-                <p>the function f will add the value of its parameter x to the current value of the global variable a. Functions can call other functions, but scopes do not propogate in any way. Many standard scientific functions are built in.  The full mathematical function api is</p>
+                <p>the function f will add the value of its parameter x to the current value of the global variable a. Functions can call other functions, but scopes do not propogate in any way. Many standard scientific functions are built in.</p>
+                <h3>Using Horus</h3>
+                <h4>Logs</h4>
+                <p>The last 10 calculations are logged for reference.  The command text or the result can be copied to the equation field field by double-clicking the desired value in the table.  Any calculations are cleared by clicking the "Clear" button below the table.</p>
+                <h4>Variable and Functions</h4>
+                <p>As with logs, the value or name of a variable/function can be copied to the equation field by double-clicking the value.  A variable or function can be removed by mousing over the row associated with it and clicking on the <span class="glyphicon glyphicon-remove"></span> icon that appears.  All variables and functions will be removed by clicking the "Reset" button.</p>
+                <h3>Supported functions</h3>
                 <h4>Exponential</h4>
                 <dl class="dl-horizontal">
                     <dt>sqrt(x)</dt>
@@ -105,7 +111,7 @@ f(x) = x + a</pre>
                 <h4>Other</h4>
                 <dl class="dl-horizontal">
                     <dt>x! or fact(x)</dt>
-                    <dd>x factorial</dd>
+                    <dd>the factorial of x</dd>
                     <dt>ln(x)</dt>
                     <dd>natural logarithm</dd>
                     <dt>root(n, x)</dt>

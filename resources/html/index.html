@@ -38,7 +38,14 @@
                                 <div class="col-md-10">
                                     <div class="input-group">
                                         <div class="input-group-addon"><img src="integral.svg" height="20px"></div>
-                                        <input type="textarea" id="input" ng-model="input" class="form-control" autocomplete="off" focus-on="focusInput">
+                                        <input
+                                            type="textarea"
+                                            id="input"
+                                            class="form-control"
+                                            autocomplete="off"
+                                            ng-model="input"
+                                            focus-on="focusInput"
+                                            ng-trim="false" />
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -61,27 +68,20 @@
                     <div id="log-table-row" class="row">
                         <div id="log-table" class="col-md-12">
                             <table class="table table-bordered">
-                                <colgroup span="3">
-                                    <col width="5%">
-                                    <col width="45%">
+                                <colgroup span="2">
+                                    <col width="50%">
                                     <col width="50%">
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th></th>
                                         <th>Input</th>
                                         <th>Result</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="log in logs">
-                                        <td>
-                                            <span class="glyphicon glyphicon-edit" ng-click="setInput(log.input)">
-                                                <span class="sr-only">Copy to input</span>
-                                            </span>
-                                        </td>
-                                        <td>{{log.input}}</td>
-                                        <td>{{log.result | num }}</td>
+                                        <td append-to="$parent.input">{{log.input}}</td>
+                                        <td append-to="$parent.input">{{log.result | num }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -105,17 +105,46 @@
                                         <th>Value</th>
                                     </tr>
                                 </thead>
-                                <tr ng-repeat="v in env | objectToArray | orderBy: 'name'" id="{{v.id}}">
-                                    <td>
+                                <tr ng-repeat="v in env.constExpr | objectToArray | orderBy: 'name'" id="{{v.id}}">
+                                    <td append-to="$parent.input">
                                         {{v.name}}
                                     </td>
-                                    <td>
+                                    <td append-to="$parent.input">
                                         {{v.value}}
                                         <a ng-click="remove(v)">
                                             <span class="glyphicon glyphicon-remove"></span>
                                         </a>
                                     </td>
                                 </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="bound-vars-row" class="row" ng-hide="isEmptyObject(env.dynExpr)">
+                        <div class="col-md-12">
+                            <table id="bound-vars" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                        <th>Bound to</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="v in env.dynExpr | objectToArray | orderBy: 'name'" id="{{v.id}}">
+                                    <td append-to="$parent.input">
+                                        {{v.name}}
+                                    </td>
+                                    <td append-to="$parent.input">
+                                        {{v.value.value}}
+                                    </td>
+                                    <td append-to="$parent.input">
+                                        {{v.value.expr}}
+                                        <a ng-click="remove(v)">
+                                            <span class="glyphicon glyphicon-remove"></span>
+                                        </a>
+                                    </td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -137,5 +166,7 @@
     <script src="js/lib/angular-modal-service.min.js"></script>
     <script src="js/lib/angular-local-storage.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min.js"></script>
-    <script src="js/app.js"></script>
+    <script src="app/app.module.js"></script>
+    <script src="app/directives.js"></script>
+    <script src="app/filters.js"></script>
 </html>

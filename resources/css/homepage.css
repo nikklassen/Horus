@@ -127,7 +127,11 @@ body {
     text-overflow: ellipsis;
 }
 
-.glyphicon-remove {
+#bound-vars-row {
+    margin-top: 20px;
+}
+
+table .glyphicon-remove {
     opacity: 0;
     transition: all 0.1s ease-in-out;
     float: right;

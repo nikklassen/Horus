@@ -6,11 +6,21 @@ chai.use(chaiAsPromised)
 var expect = chai.expect
 var assert = chai.assert
 
+function extend(target) {
+    var copyProp = function(source, prop) {
+        target[prop] = source[prop];
+    }
+    for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i]
+        Object.keys(source).map(copyProp.bind(null, source));
+    }
+}
+
 var Definition = function(type, name) {
     var id = '/' + type + '/' + name
     this._element = element(by.id(id))
-    this.name = this._element.element(by.binding('v.name'))
-    this.value = this._element.element(by.binding('v.value'))
+    this.name = this.element(by.binding('v.name'))
+    this.value = this.element(by.binding('v.value'))
 }
 
 Definition.prototype = {
@@ -21,6 +31,15 @@ Definition.prototype = {
         return this._element.isPresent()
     }
 }
+
+var BoundDefinition = function(type, name) {
+    var def = new Definition(type, name);
+    extend(this, def);
+    this.expr = this.element(by.binding('v.value.expr'))
+    this.value = this.element(by.binding('v.value.value'))
+}
+
+extend(BoundDefinition.prototype, Definition.prototype)
 
 var Homepage = function() {
 
@@ -39,7 +58,12 @@ Homepage.prototype = {
     },
 
     setInput: function(data) {
+        this.input.clear()
         this.input.sendKeys(data)
+    },
+
+    getInput: function() {
+        return this.input.getAttribute('value')
     },
 
     calculate: function() {
@@ -56,6 +80,10 @@ Homepage.prototype = {
 
     getDefinition: function(type, name) {
         return new Definition(type, name)
+    },
+
+    getBoundDefinition: function(type, name) {
+        return new BoundDefinition(type, name)
     },
 
     getAngleMode: function() {
@@ -135,11 +163,12 @@ describe('homepage', function () {
         var homepage = new Homepage()
         homepage.get()
 
-        var v = homepage.getDefinition('vars', 'y')
-        assert.eventually.equal(v.isPresent(), true)
+        var v = homepage.getBoundDefinition('vars', 'y')
+        expect(v.isPresent()).to.eventually.equal(true)
 
         expect(v.name.getText()).to.eventually.equal('y')
-        expect(v.value.getText()).to.eventually.equal('2.0 = a')
+        expect(v.value.getText()).to.eventually.equal('2.0')
+        expect(v.expr.getText()).to.eventually.equal('a')
     })
 
     it('should replace existing variable', function() {
@@ -168,11 +197,40 @@ describe('homepage', function () {
         expect(f.value.getText()).to.eventually.equal('3 * r')
     })
 
+    it('should append a log to the input', function() {
+        var homepage = new Homepage()
+        homepage.get()
+
+        homepage.setInput('2 * 3')
+        homepage.calculate();
+
+        var column = element(by.repeater('log in logs').row(0).column('result'))
+        assert.eventually.equal(column.isPresent(), true)
+
+        homepage.setInput('six = ')
+        browser.actions().doubleClick(column).perform()
+
+        expect(homepage.getInput()).to.eventually.equal('six = 6.0')
+    })
+
+    it('should append a function to the input', function() {
+        var homepage = new Homepage()
+        homepage.get()
+
+        var f = homepage.getDefinition('funcs', 'a')
+        assert.eventually.equal(f.isPresent(), true)
+
+        homepage.setInput('1 + ')
+        browser.actions().doubleClick(f.value).perform()
+
+        expect(homepage.getInput()).to.eventually.equal('1 + x + 2')
+    })
+
     it('should delete a bound variable', function() {
         var homepage = new Homepage()
         homepage.get()
 
-        var v = homepage.getDefinition('vars', 'y')
+        var v = homepage.getBoundDefinition('vars', 'y')
         assert.eventually.equal(v.isPresent(), true);
 
         // Click the 'X' button
