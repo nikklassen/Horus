@@ -1,4 +1,4 @@
-module Calculator.SynCheck (
+module Calculator.ASTPass.SynCheck (
     synCheckPass
 ) where
 
@@ -12,24 +12,27 @@ import qualified Data.Map as Map (member, notMember)
 import qualified Data.Set as Set (empty, member, notMember)
 
 -- Catch all for various context-sensitive syntax checks
-synCheckPass :: AST -> Env -> AST
-synCheckPass (EqlStmt f@(FuncExpr fName ps) rhs) env =
-        case getParams ps of
-            (Left e) -> error e
-            (Right params) ->
-                let funcCheck = checkForRecursiveFunc fName env . checkUndef params env
-                in EqlStmt f $!! astMap funcCheck rhs
-synCheckPass (BindStmt (Var b) rhs) env = 
-        if b `elem` ["pi", "e"] then
-            error $ "Cannot bind to reserved variable name " ++ b
-        else
-            astMap (checkForRecursiveDef b env) rhs
-synCheckPass ast@(EqlStmt (Var v) _) _ =
-        if v `elem` ["pi", "e"] then
-            error $ "Cannot assign to reserved variable name " ++ v
-        else
-            ast
-synCheckPass ast _ = ast
+synCheckPass :: Env -> AST -> AST
+synCheckPass env ast@(EqlStmt lhs rhs) =
+        case lhs of
+            f@(FuncExpr fName ps) ->
+                case getParams ps of
+                    (Left e) -> error e
+                    (Right params) ->
+                        let funcCheck = checkForRecursiveFunc fName env . checkUndef params env
+                        in EqlStmt f $!! astMap funcCheck rhs
+            (Var _) -> ast
+
+            -- This case will caught by the parser except in cases of
+            -- inlined variables (i.e. pi, e)
+            _ -> error $ "Cannot assign value to " ++ show lhs
+
+synCheckPass env (BindStmt lhs rhs) =
+        case lhs of
+            (Var b) -> astMap (checkForRecursiveDef b env) rhs
+            _ -> error $ "Cannot bind value to " ++ show lhs
+
+synCheckPass _ ast = ast
 
 checkUndef :: Set String -> Env -> AST -> AST
 checkUndef params env v@(Var a) = if a `Set.notMember` params && a `Map.notMember` getVars env then

@@ -4,7 +4,7 @@ import Test.Framework(defaultMain, testGroup)
 import qualified Calculator.Canon.Tests as Canon
 import qualified Calculator.Evaluator.Tests as Evaluator
 import qualified Calculator.Parser.Tests as Parser
-import qualified Calculator.SynCheck.Tests as SynCheck
+import qualified Calculator.ASTPass.SynCheck.Tests as SynCheck
 import qualified Calculator.Functions.Tests as Functions
 
 main :: IO ()

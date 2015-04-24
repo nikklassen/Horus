@@ -3,6 +3,7 @@ module Calculator (
     module Calculator.Data.Result
 ) where
 
+import Calculator.ASTPass
 import Calculator.Data.AST
 import Calculator.Data.Decimal
 import Calculator.Data.Env
@@ -13,7 +14,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map (insert, mapAccumWithKey, empty)
 
 calculate :: String -> UserPrefs -> Env -> Result
-calculate eq prefs env = let (r, newEnv@(Env vs fs)) = evalPass (parse eq) prefs env
+calculate eq prefs env = let (r, newEnv@(Env vs fs)) = evalPass (runASTPasses env $ parse eq) prefs env
                              bound = fst $ Map.mapAccumWithKey (evalBound prefs newEnv) Map.empty vs
                          in Result r vs fs bound
 
