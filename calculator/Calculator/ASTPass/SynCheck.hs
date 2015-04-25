@@ -5,7 +5,7 @@ module Calculator.ASTPass.SynCheck (
 import Calculator.Data.AST
 import Calculator.Data.Env
 import Calculator.Data.Function (body)
-import Control.DeepSeq (force, ($!!))
+import Control.DeepSeq (deepseq, force, ($!!))
 import Data.Map ((!))
 import Data.Set (Set, insert)
 import qualified Data.Map as Map (member, notMember)
@@ -29,7 +29,7 @@ synCheckPass env ast@(EqlStmt lhs rhs) =
 
 synCheckPass env (BindStmt lhs rhs) =
         case lhs of
-            (Var b) -> astMap (checkForRecursiveDef b env) rhs
+            (Var b) -> BindStmt lhs $!! astMap (checkForRecursiveDef b env) rhs
             _ -> error $ "Cannot bind value to " ++ show lhs
 
 synCheckPass _ ast = ast
@@ -55,13 +55,13 @@ getParams (ast:_) = Left $ "Unexpected parameter " ++ show ast
 checkForRecursiveDef :: String -> Env -> AST -> AST
 checkForRecursiveDef newVar env@(Env vars _) ast@(Var v)
     | v == newVar = error $ "Recursive use of bound variable " ++ newVar
-    | v `Map.member` vars = astMap (checkForRecursiveDef newVar env) $ vars ! v
+    | v `Map.member` vars = astMap (checkForRecursiveDef newVar env) (vars ! v) `deepseq` ast
     | otherwise = ast
 checkForRecursiveDef _ _ ast = force ast
 
 checkForRecursiveFunc :: String -> Env -> AST -> AST
 checkForRecursiveFunc newFunc env@(Env _ funcs) ast@(FuncExpr f _)
     | f == newFunc = error $ "Recursive use of function " ++ newFunc
-    | f `Map.member` funcs = astMap (checkForRecursiveFunc newFunc env) $ body $ funcs ! f
+    | f `Map.member` funcs = astMap (checkForRecursiveFunc newFunc env) (body $ funcs ! f) `deepseq` ast
     | otherwise = ast
 checkForRecursiveFunc _ _ ast = force ast

@@ -19,7 +19,9 @@ tests = [ testCase "Duplicate parameter" dupParam
         , testCase "Use of parameter" useParam
         , testCase "Use of global var" useGlobal
         , testCase "Recursive definition of bound var" recursiveBind
+        , testCase "Non-recursive bound variable" nonRecursiveBind
         , testCase "Recursive function definition" recursiveFunc
+        , testCase "Non-recursive function definition" nonRecursiveFunc
         , testCase "Assigment to number" assignNum
         , testCase "Bind to number" bindNum
         , testCase "No op" noop
@@ -43,9 +45,17 @@ recursiveBind = deepAssertRaises "Recursive use of bound variable a" (synCheckPa
                 where stmt = [m|a := b + 2|]
                       env = Env (Map.fromList [("b", Var "a")]) Map.empty
 
+nonRecursiveBind = synCheckPass env stmt @?== stmt
+                   where stmt = [m|a := b + 2|]
+                         env = Env (Map.fromList [("b", Number 2)]) Map.empty
+
 recursiveFunc = deepAssertRaises "Recursive use of function f" (synCheckPass env stmt)
                 where stmt = [m|f(a) = m(a)|]
-                      env = Env Map.empty $ Map.fromList [("m", Function ["a"] (FuncExpr "f" [Var "a"]))]
+                      env = Env Map.empty $ Map.fromList [("m", Function ["a"] [m|f(a)|])]
+
+nonRecursiveFunc = synCheckPass env stmt @?== stmt
+                   where stmt = [m|f(a) = m(a)|]
+                         env = Env Map.empty $ Map.fromList [("m", Function ["a"] [m|a + 4|])]
 
 assignNum = deepAssertRaises "Cannot assign value to 2.0" $ synCheckPass emptyEnv (EqlStmt (Number 2) (Number 3))
 
