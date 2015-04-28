@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Calculator.Parser (
     parse,
     m
@@ -5,7 +7,6 @@ module Calculator.Parser (
 
 import Calculator.Data.AST
 import Calculator.Parser.Helpers
-import Control.Applicative ((<$>), (*>), (<*))
 import Control.Monad.Identity (Identity)
 import Data.Generics.Aliases (extQ)
 import Language.Haskell.TH.Quote

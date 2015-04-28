@@ -9,7 +9,7 @@ import Calculator.Data.AST
 import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function (Function, showDeclaration)
-import Control.Applicative (optional, (<$>))
+import Control.Applicative (optional)
 import Control.DeepSeq (($!!))
 import Control.Monad (msum)
 import Control.Monad.IO.Class (liftIO)
@@ -121,7 +121,7 @@ modifyUserInfo acid = do
         userId <- getUserId
         maybeBody <- takeRequestBody rq
         let b = unBody $ fromMaybe (Body "") maybeBody
-        case decode b of
+        case decode b :: Maybe [Map String String] of
             Just values ->
                 if all isRemove values then do
                     user <- query' acid $ UserState.GetUser userId

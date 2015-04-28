@@ -3,9 +3,10 @@ version:             0.1.0.0
 homepage:            http://github.com/nikklassen/Horus
 author:              Nik Klassen
 build-type:          Simple
-cabal-version:       >=1.10
+cabal-version:       >=1.22
 
 executable Horus
+  default-language:    Haskell2010
   main-is:             api/Server.hs
   other-extensions:    DeriveDataTypeable,
                        DeriveGeneric,
@@ -27,7 +28,7 @@ executable Horus
                        deepseq-generics,
                        happstack-server,
                        lifted-base,
-                       mtl,
+                       mtl ==2.2.1,
                        numbers,
                        parsec,
                        safecopy,
@@ -36,6 +37,6 @@ executable Horus
                        template-haskell,
                        test-framework,
                        test-framework-hunit,
-                       testpack,
+                       testpack ==2.1.3.*,
                        text,
                        transformers

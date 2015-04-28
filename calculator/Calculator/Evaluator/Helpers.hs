@@ -11,7 +11,6 @@ import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function
 import Calculator.Functions
-import Control.Applicative ((<$>))
 import Control.Monad.RWS
 import qualified Data.Map as Map (fromList)
 

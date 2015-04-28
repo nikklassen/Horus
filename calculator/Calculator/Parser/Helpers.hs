@@ -7,7 +7,6 @@ module Calculator.Parser.Helpers (
 ) where
 
 import Calculator.Data.Decimal
-import Control.Applicative ((<$>))
 import Data.Char
 import Language.Haskell.TH.Syntax
 import Text.Parsec.Char (char, oneOf, digit, letter, alphaNum)

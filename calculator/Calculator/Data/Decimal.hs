@@ -4,13 +4,13 @@ module Calculator.Data.Decimal (
     Decimal(..)
 ) where
 
-import Control.DeepSeq (NFData)
+import Control.Arrow (first)
+import Control.DeepSeq (NFData, rnf)
 import Control.Monad (liftM)
 import Data.Data
 import Data.Number.CReal
 import Data.Ratio ((%))
 import Data.SafeCopy
-import Control.Arrow (first)
 
 newtype Decimal = Decimal CReal
                   deriving (Typeable, Enum, Eq, Floating, Fractional, Num, Ord, RealFloat, RealFrac)
@@ -40,4 +40,5 @@ instance SafeCopy Decimal where
      putCopy n = contain $ safePut $ show n
      getCopy = contain $ liftM read safeGet
 
-instance NFData Decimal
+instance NFData Decimal where
+    rnf d = d `seq` ()
