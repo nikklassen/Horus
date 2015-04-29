@@ -5,7 +5,6 @@ module Calculator.Data.Decimal (
 ) where
 
 import Control.Arrow (first)
-import Control.DeepSeq (NFData, rnf)
 import Control.Monad (liftM)
 import Data.Data
 import Data.Number.CReal
@@ -39,6 +38,3 @@ instance Real Decimal where
 instance SafeCopy Decimal where
      putCopy n = contain $ safePut $ show n
      getCopy = contain $ liftM read safeGet
-
-instance NFData Decimal where
-    rnf d = d `seq` ()

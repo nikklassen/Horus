@@ -3,9 +3,10 @@ module Calculator.ASTPass.ConstExpansion (
 ) where
 
 import Calculator.Data.AST
+import Calculator.Error (Safe)
 
-constExpansionPass :: AST -> AST
-constExpansionPass = astMap findConsts
+constExpansionPass :: AST -> Safe AST
+constExpansionPass = astMap (return . findConsts)
                      where findConsts :: AST -> AST
                            findConsts ast@(Var v) =
                                    case v of

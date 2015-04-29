@@ -10,6 +10,7 @@ import Calculator.Data.AST
 import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function
+import Calculator.Error
 import Calculator.Functions
 import Control.Monad.RWS
 import qualified Data.Map as Map (fromList)
@@ -24,34 +25,36 @@ eval (Neg e) = negate <$> eval e
 eval (OpExpr op leftExpr rightExpr) = do
     leftVal <- eval leftExpr
     rightVal <- eval rightExpr
-    return $ operate op leftVal rightVal
+    lift $ operate op leftVal rightVal
 
 eval (FuncExpr func es) = do
     args <- mapM eval es
     prefs <- ask
     case getFunction func prefs of
-        Just f -> return $ f args
+        Just f -> lift $ f args
         Nothing -> getEnvFunc func >>= \f -> evalFunction f args
 
-eval ast = error $ "Cannot evaluate the statement " ++ show ast
+eval ast = throwError $ "Cannot evaluate the statement " ++ show ast
 
 evalFunction :: Function -> [Decimal] -> ScopeRWS Decimal
 evalFunction (Function p b) args = do
-    let argVars = Map.fromList $ zip' p $ map Number args
+    argVars <- lift $ zip' p $ map Number args
     scope <- get
-    put $ scope { localVars = argVars }
+    put $ scope { localVars = Map.fromList argVars }
     res <- eval b
     put scope
     return res
 
-zip' :: [a] -> [b] -> [(a, b)]
-zip' (x:xs) (y:ys) = (x, y) : zip' xs ys
-zip' [] [] = []
-zip' _ _ = error "Unexpected number of arguments"
+zip' :: [a] -> [b] -> Safe [(a, b)]
+zip' (x:xs) (y:ys) = liftM ((:) (x, y)) $ zip' xs ys
+zip' [] [] = return []
+zip' _ _ = throwError "Unexpected number of arguments"
 
-operate :: String -> Decimal -> Decimal -> Decimal
+operate :: String -> Decimal -> Decimal -> Safe Decimal
 operate op n1 n2 =
-    case op of
+    if op `notElem` ["+", "*", "-", "/", "^", "%"] then
+        throwError $ "Use of unsupported operator " ++ op
+    else return $ case op of
         "+" -> n1 + n2
         "*" -> n1 * n2
         "-" -> n1 - n2
@@ -59,5 +62,5 @@ operate op n1 n2 =
         "^" -> let sign = n1 / abs n1
                in sign * (abs n1 ** n2)
         "%" -> realMod n1 n2
-        o -> error $ "Use of unsupported operator " ++ o
+        _ -> error "Missing supported operator"
     where realMod a b = a - fromInteger (floor $ a/b) * b

@@ -3,7 +3,8 @@ module Calculator.Canon (
 ) where
 
 import Calculator.Canon.Internal
-import Calculator.Data.AST
+import Calculator.Data.AST (AST)
+import Calculator.Error (Safe)
 
-canonPass :: AST -> AST
+canonPass :: AST -> Safe AST
 canonPass = canon

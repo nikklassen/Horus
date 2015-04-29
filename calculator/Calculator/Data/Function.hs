@@ -5,15 +5,11 @@ module Calculator.Data.Function (
 ) where
 
 import Calculator.Data.AST
-import Control.DeepSeq
 import Data.SafeCopy
 
 data Function = Function { params :: [String]
                          , body :: AST
                          } deriving (Eq)
-
-instance NFData Function where
-    rnf (Function p b) = rnf p `seq` rnf b
 
 instance Show Function where
     show f@(Function _ b) = showDeclaration f ++ "= " ++ show b

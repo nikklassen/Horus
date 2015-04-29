@@ -10,7 +10,7 @@ import Calculator.Canon.Internal
 import Calculator.Parser
 import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
-import Test.HUnit
+import TestHelpers
 
 tests = [ testCase "Number" number
         , testCase "Var" variable
@@ -64,82 +64,82 @@ tests = [ testCase "Number" number
             ]
         ]
 
-number = canon [m|2|] @?= [m|2|]
+number = canon [m|2|] @?== [m|2|]
 
-variable = canon [m|a|] @?= [m|a|]
+variable = canon [m|a|] @?== [m|a|]
 
-negativeReduce = canon (Neg (Number 2)) @?= Number (-2)
+negativeReduce = canon (Neg (Number 2)) @?== Number (-2)
 
-negativeNoReduce = canon [m|-a|] @?= [m|-a|]
+negativeNoReduce = canon [m|-a|] @?== [m|-a|]
 
-funcReduce = canon [m|cos(1+1)|] @?= [m|cos(2)|]
+funcReduce = canon [m|cos(1+1)|] @?== [m|cos(2)|]
 
-funcExprReduce = canon [m|f(a) = 1 + 1|] @?= [m|f(a) = 2|]
+funcExprReduce = canon [m|f(a) = 1 + 1|] @?== [m|f(a) = 2|]
 
-funcPartial = canon [m|foo(2 + 3, a)|] @?= [m|foo(5, a)|]
+funcPartial = canon [m|foo(2 + 3, a)|] @?== [m|foo(5, a)|]
 
-transNoReduce = canon [m|sin(1)|] @?= [m|sin(1)|]
+transNoReduce = canon [m|sin(1)|] @?== [m|sin(1)|]
 
-bigIntNoReduce = canon [m|1e41 * 1e41|] @?= [m|1e41 * 1e41|]
+bigIntNoReduce = canon [m|1e41 * 1e41|] @?== [m|1e41 * 1e41|]
 
 -- Multiplication
 
-multReduceConsts = canon [m|2 * 3|] @?= [m|6|]
+multReduceConsts = canon [m|2 * 3|] @?== [m|6|]
 
-multAssocLeft = canon [m|a * (b * c)|] @?= [m|(a * b) * c|]
+multAssocLeft = canon [m|a * (b * c)|] @?== [m|(a * b) * c|]
 
-multOverConstAddRight = canon [m|(2 + a) * 3|] @?= [m|6 + (3 * a)|]
+multOverConstAddRight = canon [m|(2 + a) * 3|] @?== [m|6 + (3 * a)|]
 
-multOverConstAddLeft = canon [m|3 * (2 + a)|] @?= [m|6 + (3 * a)|]
+multOverConstAddLeft = canon [m|3 * (2 + a)|] @?== [m|6 + (3 * a)|]
 
-multOverAddRight = canon [m|3 * (a + b)|] @?= [m|(3 * a) + (3 * b)|]
+multOverAddRight = canon [m|3 * (a + b)|] @?== [m|(3 * a) + (3 * b)|]
 
-multOverAddLeft = canon [m|(a + b) * 3|] @?= [m|(3 * a) + (3 * b)|]
+multOverAddLeft = canon [m|(a + b) * 3|] @?== [m|(3 * a) + (3 * b)|]
 
-multOverSubRight = canon [m|3 * (a - b)|] @?= [m|(3 * a) - (3 * b)|]
+multOverSubRight = canon [m|3 * (a - b)|] @?== [m|(3 * a) - (3 * b)|]
 
-multOverSubLeft = canon [m|(a - b) * 3|] @?= [m|(3 * a) - (3 * b)|]
+multOverSubLeft = canon [m|(a - b) * 3|] @?== [m|(3 * a) - (3 * b)|]
 
-multOverGenAddRight = canon [m|c * (a + b)|] @?= [m|(c * a) + (c * b)|]
+multOverGenAddRight = canon [m|c * (a + b)|] @?== [m|(c * a) + (c * b)|]
 
-multOverGenAddLeft = canon [m|(a + b) * c|] @?= [m|(a * c) + (b * c)|]
+multOverGenAddLeft = canon [m|(a + b) * c|] @?== [m|(a * c) + (b * c)|]
 
-multOverGenSubRight = canon [m|c * (a - b)|] @?= [m|(c * a) - (c * b)|]
+multOverGenSubRight = canon [m|c * (a - b)|] @?== [m|(c * a) - (c * b)|]
 
-multOverGenSubLeft = canon [m|(a - b) * c|] @?= [m|(a * c) - (b * c)|]
+multOverGenSubLeft = canon [m|(a - b) * c|] @?== [m|(a * c) - (b * c)|]
 
-multCycleLeft = canon [m|(2 * a) * 3|] @?= [m|6 * a|]
+multCycleLeft = canon [m|(2 * a) * 3|] @?== [m|6 * a|]
 
-multCycleRight = canon [m|3 * (2 * a)|] @?= [m|6 * a|]
+multCycleRight = canon [m|3 * (2 * a)|] @?== [m|6 * a|]
 
-multMoveNum = canon [m|a * 3|] @?= [m|3 * a|]
+multMoveNum = canon [m|a * 3|] @?== [m|3 * a|]
 
-multOther = canon [m|2 * a|] @?= [m|2 * a|]
+multOther = canon [m|2 * a|] @?== [m|2 * a|]
 
 -- Addition
 
-addReduceConsts = canon [m|2 + 3|] @?= [m|5|]
+addReduceConsts = canon [m|2 + 3|] @?== [m|5|]
 
-addCycleLeft = canon [m|(2 + a) + 3|] @?= [m|5 + a|]
+addCycleLeft = canon [m|(2 + a) + 3|] @?== [m|5 + a|]
 
-addCycleRight = canon [m|3 + (2 + a)|] @?= [m|5 + a|]
+addCycleRight = canon [m|3 + (2 + a)|] @?== [m|5 + a|]
 
-addShiftLeft = canon [m|a + 2|] @?= [m|2 + a|]
+addShiftLeft = canon [m|a + 2|] @?== [m|2 + a|]
 
-addAssocLeft = canon [m|a + (b + c)|] @?= [m|(a + b) + c|]
+addAssocLeft = canon [m|a + (b + c)|] @?== [m|(a + b) + c|]
 
 -- Subtraction
 
-subReduceConsts = canon [m|3 - 2|] @?= [m|1|]
+subReduceConsts = canon [m|3 - 2|] @?== [m|1|]
 
-subToAdd = canon [m|a - 2|] @?= OpExpr "+" (Number (-2)) (Var "a")
+subToAdd = canon [m|a - 2|] @?== OpExpr "+" (Number (-2)) (Var "a")
 
 -- Other
 
-opReduce = canon [m|8 % 6|] @?= [m|2|]
+opReduce = canon [m|8 % 6|] @?== [m|2|]
 
-opNoReduce = canon [m|a / 3|] @?= [m|a / 3|]
+opNoReduce = canon [m|a / 3|] @?== [m|a / 3|]
 
-eqlReduce = canonPass [m|b = 2 + 3|] @?= [m|b = 5|]
+eqlReduce = canonPass [m|b = 2 + 3|] @?== [m|b = 5|]
 
-bindReduce = canonPass [m|b := 2 + 3|] @?= [m|b := 5|]
+bindReduce = canonPass [m|b := 2 + 3|] @?== [m|b := 5|]

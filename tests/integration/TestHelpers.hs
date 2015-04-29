@@ -1,19 +1,11 @@
 module TestHelpers where
 
-import Control.DeepSeq (($!!), NFData)
-import Control.Exception (ErrorCall(..))
-import Test.HUnit
-import Test.HUnit.Tools
-import qualified Control.Exception.Lifted as CEL
+import Control.Monad.Except (Except, throwError)
+import Test.HUnit ((@?=), Assertion)
+
+assertThrows :: (Eq a, Eq e, Show a, Show e) => e -> Except e a -> Assertion
+assertThrows err test = test @?= throwError err
 
 infix 1 @?==
-(@?==) :: (Eq a, Show a, NFData a) => a ->        -- actual value
-                                      a ->        -- expected value
-                                      Assertion
-actual @?== expected = (CEL.evaluate $!! actual) >>= (@?= expected)
-
-deepAssertRaises :: (Show a, NFData a) => String ->
-                                          a ->
-                                          Assertion
-deepAssertRaises msg expr = assertRaises "" (ErrorCall msg)
-                                            (CEL.evaluate $!! expr)
+(@?==) :: (Eq a, Eq e, Show a, Show e) => Except e a -> a -> Assertion
+(@?==) test result = test @?= return result

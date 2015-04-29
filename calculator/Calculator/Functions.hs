@@ -5,6 +5,7 @@ module Calculator.Functions (
 
 import Calculator.Data.Decimal
 import Calculator.Data.Env (UserPrefs(..))
+import Calculator.Error
 import Control.Arrow (second)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -12,32 +13,34 @@ import qualified Data.Map as Map
 isFunction :: String -> UserPrefs -> Bool
 isFunction f = Map.member f . functions
 
-getFunction :: String -> UserPrefs -> (Maybe ([Decimal] -> Decimal))
+getFunction :: String -> UserPrefs -> Maybe ([Decimal] -> Safe Decimal)
 getFunction f = Map.lookup f . functions
 
-functions :: UserPrefs -> (Map String ([Decimal] -> Decimal))
+functions :: UserPrefs -> Map String ([Decimal] -> Safe Decimal)
 functions prefs = Map.fromList $
                     -- Multi argument functions
                     [ ("root", root)
                     , ("log", log')
                     ] ++
                     map (second applyToFirst)
-                    -- Power
-                    ([ ("sqrt", sqrt)
-                     , ("exp", exp)
+                    (map (second (return .))
+                            -- Power
+                            [ ("sqrt", sqrt)
+                            , ("exp", exp)
 
-                     -- Integer
-                     , ("ceil", fromIntegral' . ceiling)
-                     , ("floor", fromIntegral' . floor)
-                     , ("round", fromIntegral' . round)
+                            -- Integer
+                            , ("ceil", fromIntegral' . ceiling)
+                            , ("floor", fromIntegral' . floor)
+                            , ("round", fromIntegral' . round)
 
-                     -- Other
-                     , ("!", fact)
+                            -- Other
+                            , ("ln", log)
+                            ] ++
+                     [ ("!", fact)
                      , ("fact", fact)
-                     , ("ln", log)
                      ] ++
                      -- Trig
-                     map (second (. trigConvert))
+                     map (\(name, f) -> (name, return . f . trigConvert))
                          [ ("sin", sin)
                          , ("cos", cos)
                          , ("tan", tan)
@@ -54,24 +57,24 @@ functions prefs = Map.fromList $
                  -- All built-in trig functions take their input in radians
                  where trigConvert = if isRadians prefs then id else (* (pi / 180))
 
-fact :: Decimal -> Decimal
+fact :: Decimal -> Safe Decimal
 fact n = if n == fromIntegral' (round n) && n >= 0 then
-             product [1..n]
+             return $ product [1..n]
          else
-             error "Factorial can only be applied to non-negative integers"
+             throwError "Factorial can only be applied to non-negative integers"
 
-root :: [Decimal] -> Decimal
-root (n:x:[]) = x**(1/n)
-root _ = error "Unexpected number of arguments"
+root :: [Decimal] -> Safe Decimal
+root [n, x] = return $ x**(1/n)
+root _ = throwError "Unexpected number of arguments"
 
-log' :: [Decimal] -> Decimal
-log' (b:x:[]) = logBase b x
-log' (x:[]) = logBase 10 x
-log' _ = error "Unexpected number of arguments"
+log' :: [Decimal] -> Safe Decimal
+log' [b, x] = return $ logBase b x
+log' [x] = return $ logBase 10 x
+log' _ = throwError "Unexpected number of arguments"
 
 fromIntegral' :: Integer -> Decimal
 fromIntegral' = fromIntegral
 
-applyToFirst :: (a -> a) -> [a] -> a
-applyToFirst f (x:[]) = f x
-applyToFirst _ _ = error "Unexpected number of arguments"
+applyToFirst :: (a -> Safe a) -> [a] -> Safe a
+applyToFirst f [x] = f x
+applyToFirst _ _ = throwError "Unexpected number of arguments"

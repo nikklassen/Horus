@@ -4,11 +4,13 @@ module Calculator.Data.Env where
 
 import Calculator.Data.AST
 import Calculator.Data.Function
-import Control.Monad.RWS (RWS, get, gets)
+import Control.Monad.Except
+import Control.Monad.RWS (get, gets)
+import Control.Monad.Trans.RWS (RWST)
 import Data.Map (Map, alter, member, (!))
 import Data.SafeCopy
 
-type ScopeRWS a = RWS UserPrefs String Scope a
+type ScopeRWS = RWST UserPrefs String Scope (Except String)
 
 data UserPrefs = UserPrefs { isRadians :: Bool
                            } deriving (Show)
@@ -40,7 +42,7 @@ getEnvVar v = do
     else if v `member` globalVars then
         return (globalVars ! v)
     else
-        error $ "Use of undefined variable \"" ++ v ++ "\""
+        throwError $ "Use of undefined variable \"" ++ v ++ "\""
 
 getEnvFunc :: String -> ScopeRWS Function
 getEnvFunc f = do
@@ -48,6 +50,6 @@ getEnvFunc f = do
     if f `member` globalFuncs then
         return (globalFuncs ! f)
     else
-        error $ "Use of undefined function \"" ++ f ++ "\""
+        throwError $ "Use of undefined function \"" ++ f ++ "\""
 
 deriveSafeCopy 0 'base ''UserPrefs

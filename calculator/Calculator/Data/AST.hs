@@ -6,10 +6,10 @@ module Calculator.Data.AST (
 ) where
 
 import Calculator.Data.Decimal
-import Control.DeepSeq.Generics
+import Calculator.Error
 import Data.Data
-import GHC.Generics
 import Data.SafeCopy
+import GHC.Generics
 
 data AST = EqlStmt AST AST
            | BindStmt AST AST
@@ -25,18 +25,26 @@ data AST = EqlStmt AST AST
            | AId String
            deriving (Eq, Generic, Typeable, Data)
 
-instance NFData AST where
-    rnf = genericRnf
+astMap :: (AST -> Safe AST) -> AST -> Safe AST
+astMap f (EqlStmt lhs rhs) = do
+    lhs' <- astMap f lhs
+    rhs' <- astMap f rhs
+    f $ EqlStmt lhs' rhs'
+astMap f (BindStmt lhs rhs) = do
+    lhs' <- astMap f lhs
+    rhs' <- astMap f rhs
+    f $ BindStmt lhs' rhs'
 
-astMap :: (AST -> AST) -> AST -> AST
-astMap f (EqlStmt lhs rhs) = f $ EqlStmt (astMap f lhs) (astMap f rhs)
-astMap f (BindStmt lhs rhs) = f $ BindStmt (astMap f lhs) (astMap f rhs)
-astMap f (OpExpr op lhs rhs) = f $ OpExpr op (astMap f lhs) (astMap f rhs)
-astMap f (FuncExpr name ps) = f $ FuncExpr name (map (astMap f) ps)
+astMap f (OpExpr op lhs rhs) = do
+    lhs' <- astMap f lhs
+    rhs' <- astMap f rhs
+    f $ OpExpr op lhs' rhs'
+
+astMap f (FuncExpr name ps) = mapM (astMap f) ps >>= f . FuncExpr name
 astMap f v@(Var _) = f v
 astMap f n@(Number _) = f n
-astMap f (Neg a) = f $ Neg (astMap f a)
-astMap _ a = error $ "Invalid ast " ++ show a
+astMap f (Neg a) = astMap f a >>= f . Neg
+astMap _ a = throwError $ "Invalid ast " ++ show a
 
 showArgs :: [AST] -> String
 showArgs [] = ""

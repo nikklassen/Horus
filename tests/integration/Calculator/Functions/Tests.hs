@@ -4,6 +4,7 @@ module Calculator.Functions.Tests where
 
 import Calculator.Data.Decimal
 import Calculator.Data.Env
+import Calculator.Error
 import Calculator.Functions
 import Data.Maybe (fromJust)
 import Test.Framework (testGroup)
@@ -28,10 +29,10 @@ tests = [ testCase "Integral function" integralFunc
         , testCase "Log no base" logNoBase
         ]
 
-func :: String -> [Decimal] -> Decimal
+func :: String -> [Decimal] -> Safe Decimal
 func fName = fromJust $ getFunction fName defaultPrefs
 
-integralFunc = func "ceil" [1.23] @?= (2 :: Decimal)
+integralFunc = func "ceil" [1.23] @?== (2 :: Decimal)
 
 isFunctionTrue = isFunction "sin" defaultPrefs @?= True
 
@@ -41,18 +42,18 @@ degrees = sinEqualsOne 90 $ defaultPrefs { isRadians = False }
 
 radians = sinEqualsOne ((pi :: Decimal) / 2) $ defaultPrefs { isRadians = True }
 
-sinEqualsOne angle prefs = (fromJust $ getFunction "sin" prefs) [angle] @?= (1 :: Decimal)
+sinEqualsOne angle prefs = (fromJust $ getFunction "sin" prefs) [angle] @?== (1 :: Decimal)
 
-factNonInteger = deepAssertRaises "Factorial can only be applied to non-negative integers" $
+factNonInteger = assertThrows "Factorial can only be applied to non-negative integers" $
                                   func "fact" [1.23]
 
-factNegative = deepAssertRaises "Factorial can only be applied to non-negative integers" $
+factNegative = assertThrows "Factorial can only be applied to non-negative integers" $
                                 func "fact" [-1]
 
-factorial = func "fact" [4] @?= 24
+factorial = func "fact" [4] @?== 24
 
-root = func "root" [3, 8] @?= 2
+root = func "root" [3, 8] @?== 2
 
-logWithBase = func "log" [2, 8] @?= 3
+logWithBase = func "log" [2, 8] @?== 3
 
-logNoBase = func "log" [100] @?= 2
+logNoBase = func "log" [100] @?== 2
