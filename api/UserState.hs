@@ -15,7 +15,7 @@ import Data.SafeCopy
 import Data.Typeable
 import qualified Data.Map as Map
 
-data User = User { variables :: Map String AST
+data User = User { variables :: Map String (AST, String)
                  , functions :: Map String (Function, String)
                  , prefs :: UserPrefs
                  } deriving (Show, Typeable)

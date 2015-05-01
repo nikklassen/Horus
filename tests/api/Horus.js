@@ -131,7 +131,7 @@ describe('Horus Api', function() {
                                 value: 3
                             },
                             y: {
-                                expr: '(4.0 * b)',
+                                expr: '4 * b',
                                 value: 12
                             },
                             z: {
@@ -164,7 +164,21 @@ describe('Horus Api', function() {
 
                     expect(res.body.result).to.eql(1)
 
-                    done()
+                    request('localhost')
+                        .get('/api/userInfo')
+                        .set('Cookie', 'user-id=testUser2')
+                        .expect(200)
+                        .end(function(err, res) {
+                            if (err) {
+                                throw err
+                            }
+
+                            expect(res.body.prefs).to.eql({
+                                isRadians: false
+                            })
+
+                            done()
+                        })
                 })
         })
 

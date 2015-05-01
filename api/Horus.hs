@@ -9,18 +9,19 @@ import Calculator.Data.AST
 import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function (Function, showDeclaration)
+import Calculator.Error
 import Control.Applicative (optional)
 import Control.Exception (catch, ErrorCall(..))
 import Control.Monad.Except (mapExcept, runExcept, liftIO, msum)
 import Data.Acid (AcidState)
 import Data.Acid.Advanced (query', update')
 import Data.Aeson hiding (Result, Number)
-import Data.Aeson.Types (parseMaybe, Pair)
+import Data.Aeson.Types (parseMaybe, Pair, emptyArray)
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Happstack.Server hiding (body, result)
 import Serializer()
 import System.UUID.V4 (uuid)
@@ -47,33 +48,50 @@ calc acid = do
                     let input = parseDefault "" "input" jsonContent
                     userId <- getUserId
                     addCookie Session $ mkCookie "user-id" userId
-                    User{..} <- query' acid (UserState.GetUser userId)
+                    user@User{..} <- query' acid (UserState.GetUser userId)
                     let userPrefs = parseDefault prefs "prefs" jsonContent
-                    res <- getReturnText input userPrefs $ Env variables (Map.map fst functions)
-                    case res of 
+                    let saveFunc = update' acid . UserState.SetUser userId
+                    safeRes <- getReturnText $ calculate input userPrefs $ Env (Map.map fst variables) (Map.map fst functions)
+                    case safeRes of
                         (Left err) -> badRequest $ jsonResponse [ "error" .= err ]
-                        (Right ans) -> do
-                            let newVars = vars ans
-                            let newFuncs = addFunctionText input $ copyFunctionText (funcs ans) functions
-                            let addedFuncs = Map.differenceWith (\a b -> if a /= b then Just a else Nothing) newFuncs functions
-                            update' acid (UserState.SetUser userId $ User newVars newFuncs userPrefs)
-                            ok $ jsonResponse $ makeJSON (Map.mapWithKey (varsToJSON $ boundResults ans) $ vars ans)
-                                                         (Map.mapWithKey funcsToJSON addedFuncs)
-                                                         ("result" .= answer ans)
+                        (Right res) -> makeCalculationResponse saveFunc (user { prefs = userPrefs }) input res
                 Nothing -> badRequest $ toResponse ("Unable to parse body" :: String)
         else resp 415 $ toResponse ("Content type must be application/json" :: String)
-        where -- Extract the user-entered body of the function
-              getFunctionText input = dropWhile isSpace $ drop 1 $ dropWhile (not . (==) '=') input
-              -- Add the correct function text for new or modified functions
-              addFunctionText input = Map.map (\(f,name) -> if null name then (f, getFunctionText input) else (f,name))
-              makeJSON vs fs res = [ "vars" .= vs
-                                   , "funcs" .= fs
-                                   , res
-                                   ]
-              -- Copy the text of the original functions to the new
-              -- functions, with a default value of "".
-              -- Union works since the user can't delete functions here
-              copyFunctionText newFuncs = Map.unionWith (\new@(newF,_) (oldF, text) -> if newF == oldF then (newF,text) else new) (Map.map (\x -> (x,"")) newFuncs)
+
+makeCalculationResponse :: (User -> ServerPart a) -> User -> String -> Result -> ServerPart Response
+makeCalculationResponse saveFunc user input VarResult{..} = do
+    let displayText = case value of
+                          (Number _) -> ""
+                          _ -> getDefinition input
+    let user' =  user {
+        variables = Map.alter (\_ -> Just (value, displayText)) name (variables user)
+    }
+    _ <- saveFunc user'
+    ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON boundResults) (variables user')
+                      , "funcs" .= emptyArray
+                      , "result" .= answer
+                      ]
+
+makeCalculationResponse saveFunc user input FuncResult{..} = do
+    let decl = getDefinition input
+    let user' = user {
+        functions = Map.alter (\_ -> Just (def, decl)) name (functions user)
+    }
+    _ <- saveFunc user'
+    ok $ jsonResponse [ "vars" .= object []
+                      , "funcs" .= object [ pack name .= funcsToJSON name (def, decl) ]
+                      , "result" .= (0 :: Integer)
+                      ]
+
+makeCalculationResponse saveFunc user _ CalcResult{..} = do
+        _ <- saveFunc user
+        ok $ jsonResponse [ "vars" .= emptyArray
+                          , "funcs" .= emptyArray
+                          , "result" .= answer ]
+
+-- Extract the user-entered body of the function
+getDefinition :: String -> String
+getDefinition = dropWhile isSpace . drop 1 . dropWhile (/= '=')
 
 getUserInfo :: AcidState UserDb -> ServerPart Response
 getUserInfo acid = do
@@ -81,20 +99,19 @@ getUserInfo acid = do
     userId <- getUserId
     User{..} <- query' acid (UserState.GetUser userId)
     addCookie Session $ mkCookie "user-id" userId
-    -- no op calculation to force bound vars to get calculed
-    res <- getReturnText "0" prefs (Env variables (Map.map fst functions))
+    res <- getReturnText $ calculateBound prefs $ Env (Map.map fst variables) (Map.map fst functions)
     case res of
         (Left err) -> ok $ jsonResponse [ "error" .= err ]
-        (Right ans) -> ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON (boundResults ans)) (vars ans)
-                                         , "funcs" .= Map.mapWithKey funcsToJSON functions
-                                         , "prefs" .= prefs
-                                         ]
+        (Right boundResults) -> ok $ jsonResponse [ "vars" .= Map.mapWithKey (varsToJSON boundResults) variables
+                                                  , "funcs" .= Map.mapWithKey funcsToJSON functions
+                                                  , "prefs" .= prefs
+                                                  ]
     
-varsToJSON :: Map String Decimal -> String -> AST -> Value
-varsToJSON _ _ (Number n) = object [ "value" .= n ]
-varsToJSON bound v expr =  object [ "value" .= (bound Map.! v)
-                                  , "expr" .= show expr
-                                  ]
+varsToJSON :: Map String Decimal -> String -> (AST, String) -> Value
+varsToJSON _ _ (Number n, _) = object [ "value" .= n ]
+varsToJSON bound v (_, text) =  object [ "value" .= (bound Map.! v)
+                                       , "expr" .= text
+                                       ]
 
 funcsToJSON :: String -> (Function, String) -> Value
 funcsToJSON k (f, text) = object [ "decl" .= (k ++ showDeclaration f)
@@ -162,11 +179,11 @@ getUserId = do userId <- optional $ lookCookieValue "user-id"
                    Nothing -> show <$> liftIO uuid
                    Just i -> return i
 
-getReturnText :: String -> UserPrefs -> Env -> ServerPart (Either String Result)
-getReturnText input prefs env = liftIO $ catch (return $! runExcept $ mapExcept formatException $ calculate input prefs env)
-                                               (\(ErrorCall e) -> return $ Left $ "Invalid input: " ++ e)
-                                where formatException (Left e) = Left $ "Invalid input: " ++ show e
-                                      formatException r = r
+getReturnText :: Safe a -> ServerPart (Either String a)
+getReturnText safeRes = liftIO $ catch (return $! runExcept $ mapExcept formatException safeRes)
+                                       (\(ErrorCall e) -> return $ Left $ "Invalid input: " ++ e)
+                        where formatException (Left e) = Left $ "Invalid input: " ++ show e
+                              formatException r = r
 
 parseDefault :: FromJSON a => a -> Text -> Object -> a
 parseDefault defaultValue key = fromMaybe defaultValue . parseMaybe (.: key)

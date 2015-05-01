@@ -2,14 +2,21 @@ module Calculator.Data.Result (
     Result(..)
 ) where
 
-import Calculator.Data.AST
-import Calculator.Data.Function
+import Calculator.Data.AST (AST)
+import Calculator.Data.Decimal (Decimal)
+import Calculator.Data.Function (Function)
 import Data.Map (Map)
-import Calculator.Data.Decimal
 
-data Result = Result {
-    answer :: Decimal,
-    vars :: Map String AST,
-    funcs :: Map String Function,
-    boundResults :: Map String Decimal
-} deriving (Eq, Show)
+data Result = FuncResult {
+                  name :: String,
+                  def :: Function
+              }
+              | VarResult {
+                  answer :: Decimal,
+                  name :: String,
+                  value :: AST,
+                  boundResults :: Map String Decimal
+              }
+              | CalcResult {
+                  answer :: Decimal
+              } deriving (Eq, Show)

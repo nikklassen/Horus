@@ -32,11 +32,11 @@ main = bracket (openMemoryState testState)
 testState :: UserDb
 testState = UserDb $ Map.fromList
                 [ ("testUser", User
-                    (Map.fromList [("a", Number 2), ("y", Var "a")])
+                    (Map.fromList [("a", (Number 2, "")), ("y", (Var "a", "a"))])
                     (Map.fromList [("a", a)])
                     defaultPrefs)
                 , ("testUser2", User
-                    (Map.fromList [("b", Number 3), ("z", Var "b")])
+                    (Map.fromList [("b", (Number 3, "")), ("z", (Var "b", "b"))])
                     (Map.fromList [("b", b)])
                     defaultPrefs)
                 ]

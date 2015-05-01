@@ -5,9 +5,9 @@ module Calculator.Evaluator.Tests (
 ) where
 
 import Calculator.Data.AST
-import Calculator.Data.Decimal
 import Calculator.Data.Env
 import Calculator.Data.Function
+import Calculator.Data.Result
 import Calculator.Error (Safe)
 import Calculator.Evaluator
 import Calculator.Parser
@@ -47,40 +47,54 @@ tests = [ testGroup "Simple"
             ]
         ]
 
-process :: AST -> Safe Decimal
-process ast = fst <$> evalPass ast defaultPrefs (Env Map.empty Map.empty)
+emptyEnv :: Env
+emptyEnv = Env Map.empty Map.empty
 
-processVars :: AST -> Map String AST -> Safe (Decimal, Env)
+process :: AST -> Safe Result
+process ast = fst <$> evalPass ast defaultPrefs emptyEnv
+
+processVars :: AST -> Map String AST -> Safe (Result, Env)
 processVars ast vars = evalPass ast defaultPrefs $ Env vars Map.empty
 
-processFuncs :: AST -> Map String Function -> Safe (Decimal, Env)
+processFuncs :: AST -> Map String Function -> Safe (Result, Env)
 processFuncs ast funcs = evalPass ast defaultPrefs $ Env Map.empty funcs
 
-int = process [m|0123456789876543210|] @?== 123456789876543210
+int = process [m|0123456789876543210|] @?== CalcResult 123456789876543210
 
-dec = process [m|0.8|] @?== 0.8
+dec = process [m|0.8|] @?== CalcResult 0.8
 
-exponential = process [m|9e-10|] @?== 9e-10
+exponential = process [m|9e-10|] @?== CalcResult 9e-10
 
-decExp = process [m|2.3e2|] @?== 230
+decExp = process [m|2.3e2|] @?== CalcResult 230
 
-op = process [m|1 + 1|] @?== 2
+op = process [m|1 + 1|] @?== CalcResult 2
 
-realMod = process [m|4 % 1.5|] @?== 1
+realMod = process [m|4 % 1.5|] @?== CalcResult 1
 
-negToPower = process [m|(-3) ^ (-2)|] @?== -1/9
+negToPower = process [m|(-3) ^ (-2)|] @?== CalcResult (-1/9)
 
-neg = process [m|-2|] @?== -2
+neg = process [m|-2|] @?== CalcResult (-2)
 
 var = let vars = Map.fromList [("a", Number 4)]
-      in processVars (Var "a") vars @?== (4, Env vars Map.empty)
+      in processVars (Var "a") vars @?== (CalcResult 4, Env vars Map.empty)
 
-eql = processVars [m|a = 4|] (Map.fromList [("a", Number 2)]) @?== (4, Env (Map.fromList [("a", Number 4)]) Map.empty)
+eql = processVars [m|a = 4|] vars @?== (VarResult {
+          answer = 4, 
+          name = "a",
+          value = vars Map.! "a",
+          boundResults = Map.empty
+      }, Env vars Map.empty)
+      where vars = Map.fromList [("a", Number 4)]
 
-bind = processVars [m|a + 2|] vars @?== (4, Env vars Map.empty)
+bind = processVars [m|a + 2|] vars @?== (CalcResult 4, Env vars Map.empty)
        where vars = Map.fromList [("b", Number 2), ("a", Var "b")]
 
-bindStmt = processVars [m|a := b|] vars @?== (2, Env vars Map.empty)
+bindStmt = processVars [m|a := b|] vars @?== (VarResult {
+               answer = 2, 
+               name = "a",
+               value = Var "b",
+               boundResults = Map.empty
+           }, Env vars Map.empty)
            where vars = Map.fromList [("b", Number 2), ("a", Var "b")]
 
 errorVar = assertThrows "Use of undefined variable \"a\"" $ process (Var "a")
@@ -97,22 +111,23 @@ errorFuncArgs = assertThrows "Unexpected number of arguments" $
 errorAST = assertThrows ("Cannot evaluate the statement " ++ show ast) $ process ast
            where ast = EqlStmt (Number 2) (Number 3)
 
-functionDef = processFuncs [m|foo(b) = b + 2|] Map.empty @?== (0, Env Map.empty fooFunc)
-              where fooFunc = Map.fromList [("foo", Function ["b"] [m|2 + b|])]
+functionDef = processFuncs [m|foo(b) = b + 2|] Map.empty @?==
+                (FuncResult { name = "foo", def = fooFunc }, emptyEnv)
+              where fooFunc = Function ["b"] [m|2 + b|]
 
-function = process [m|sin(1)|] @?== sin 1
+function = process [m|sin(1)|] @?== CalcResult (sin 1)
 
-userFunction = processFuncs [m|foo(2)|] fooFunc @?== (4, Env Map.empty fooFunc)
+userFunction = processFuncs [m|foo(2)|] fooFunc @?== (CalcResult 4, Env Map.empty fooFunc)
                where fooFunc = Map.fromList [("foo", Function ["b"] [m|b + 2|])]
 
-nestedFunction = (fst <$> evalPass [m|f(2)|] defaultPrefs env) @?== 2
+nestedFunction = (fst <$> evalPass [m|f(2)|] defaultPrefs env) @?== CalcResult 2
                  where f = ("f", Function ["a"] [m|z(a)|])
                        z = ("z", Function ["a"] (Var "a"))
                        env = Env Map.empty $ Map.fromList [f, z]
 
 -- The local x variable should be used when evaluating f
 -- and the global x should be used when evaluating inner function m
-varScopes = (fst <$> evalPass [m|f(2)|] defaultPrefs env) @?== 13
+varScopes = (fst <$> evalPass [m|f(2)|] defaultPrefs env) @?== CalcResult 13
             where f = ("f", Function ["x"] [m|x + z(3)|])
                   z = ("z", Function ["a"] [m|x + a|])
                   env = Env (Map.fromList [("x", Number 8)]) $ Map.fromList [f, z]

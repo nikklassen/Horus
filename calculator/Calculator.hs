@@ -1,5 +1,6 @@
 module Calculator (
     calculate,
+    calculateBound,
     module Calculator.Data.Result
 ) where
 
@@ -18,9 +19,16 @@ import qualified Data.Map as Map (insert, assocs, empty)
 calculate :: String -> UserPrefs -> Env -> Safe Result
 calculate eq prefs env = do
     checkedAST <- runASTPasses env $ parse eq
-    (r, newEnv@(Env vs fs)) <- evalPass checkedAST prefs env
-    bound <- foldM (evalBound prefs newEnv) Map.empty (Map.assocs vs)
-    return $ Result r vs fs bound
+    (r, newEnv) <- evalPass checkedAST prefs env
+    case r of
+        v@VarResult{} -> do
+            bound <- calculateBound prefs newEnv
+            return v { boundResults = bound }
+        res -> return res
+
+
+calculateBound :: UserPrefs -> Env -> Safe (Map String Decimal)
+calculateBound prefs env = foldM (evalBound prefs env) Map.empty (Map.assocs $ getVars env)
 
 evalBound :: UserPrefs
           -> Env
@@ -28,4 +36,4 @@ evalBound :: UserPrefs
           -> (String, AST)              -- the variable to evaluate
           -> Safe (Map String Decimal)  -- the evaluated results, will fail if one computation fails
 evalBound _ _ acc (_, Number _) = return acc
-evalBound prefs env acc (v, ast) = (fst <$> evalPass ast prefs env) >>= \d -> return $ Map.insert v d acc
+evalBound prefs env acc (v, ast) = ((answer . fst) <$> evalPass ast prefs env) >>= \d -> return $ Map.insert v d acc
