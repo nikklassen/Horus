@@ -6,9 +6,7 @@ module Horus (
 
 import Calculator
 import Calculator.Data.AST
-import Calculator.Data.Decimal
 import Calculator.Data.Env
-import Calculator.Data.Function (Function, showDeclaration)
 import Calculator.Error
 import Control.Applicative (optional)
 import Control.Exception (catch, ErrorCall(..))
@@ -16,14 +14,14 @@ import Control.Monad.Except (mapExcept, runExcept, liftIO, msum)
 import Data.Acid (AcidState)
 import Data.Acid.Advanced (query', update')
 import Data.Aeson hiding (Result, Number)
-import Data.Aeson.Types (parseMaybe, Pair, emptyArray)
+import Data.Aeson.Types (parseMaybe, emptyArray)
 import Data.Char (isSpace)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 import Happstack.Server hiding (body, result)
-import Serializer()
+import Serializer
 import System.UUID.V4 (uuid)
 import UserState
 import qualified Data.ByteString.Char8 as Char8 (unpack)
@@ -106,17 +104,6 @@ getUserInfo acid = do
                                                   , "funcs" .= Map.mapWithKey funcsToJSON functions
                                                   , "prefs" .= prefs
                                                   ]
-    
-varsToJSON :: Map String Decimal -> String -> (AST, String) -> Value
-varsToJSON _ _ (Number n, _) = object [ "value" .= n ]
-varsToJSON bound v (_, text) =  object [ "value" .= (bound Map.! v)
-                                       , "expr" .= text
-                                       ]
-
-funcsToJSON :: String -> (Function, String) -> Value
-funcsToJSON k (f, text) = object [ "decl" .= (k ++ showDeclaration f)
-                                       , "def" .= text
-                                       ]
 
 resetUserInfo :: AcidState UserDb -> ServerPart Response
 resetUserInfo acid = do
@@ -187,9 +174,6 @@ getReturnText safeRes = liftIO $ catch (return $! runExcept $ mapExcept formatEx
 
 parseDefault :: FromJSON a => a -> Text -> Object -> a
 parseDefault defaultValue key = fromMaybe defaultValue . parseMaybe (.: key)
-
-jsonResponse :: [Pair] -> Response
-jsonResponse = addHeader "Content-Type" "application/json" . toResponse . encode . object
 
 contentType :: String -> Request -> Bool
 contentType ct rq = ct `isPrefixOf` rqCt rq
