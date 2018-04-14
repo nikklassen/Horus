@@ -1,0 +1,6 @@
+.git
+.cabal-sandbox
+dist
+obj
+state
+bin

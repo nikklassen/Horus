@@ -1,8 +1,8 @@
 OBJDIR = obj
 BINDIR = bin
-LIBDIR = calculator
-APIDIR = api
-TESTDIR = tests
+LIBDIR = src/calculator
+APIDIR = src/api
+TESTDIR = src/tests
 
 LANGUAGE = -XQuasiQuotes -XTemplateHaskell
 WARNINGS = -Wall
@@ -17,7 +17,7 @@ INCLUDES = -i$(LIBDIR) -i$(APIDIR)
 StartTestServer = $(BINDIR)/test_server > /dev/null 2>&1 &
 KillTestServer = @killall test_server
 
-server: $(APIDIR)/Server.hs tags | $(BINDIR)
+server: $(APIDIR)/Server.hs | $(BINDIR)
 		@echo "Building server"
 		ghc $< $(INCLUDES) $(GHC_OPTIONS) -o $(BINDIR)/server
 

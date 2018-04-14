@@ -19,7 +19,7 @@ executable Horus
                        TemplateHaskell,
                        TypeFamilies
   build-depends:       HUnit,
-                       acid-state,
+                       acid-state ==0.14.*,
                        aeson,
                        base,
                        bytestring,
@@ -28,7 +28,7 @@ executable Horus
                        mtl ==2.2.1,
                        numbers,
                        parsec,
-                       safecopy,
+                       safecopy >=0.6,
                        syb,
                        system-uuid,
                        template-haskell,

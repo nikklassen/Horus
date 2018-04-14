@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/local/bin/ghc --interactive -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d -icalculator -iapi -itests/integration -XQuasiQuotes -XTemplateHaskell $@
+/usr/local/bin/ghc --interactive -no-user-package-db -package-db .cabal-sandbox/*-packages.conf.d -isrc/calculator -iapi -isrc/tests/integration -XQuasiQuotes -XTemplateHaskell $@
